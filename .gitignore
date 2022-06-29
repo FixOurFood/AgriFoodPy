@@ -130,3 +130,6 @@ dmypy.json
 
 # geodatabases
 *.gdb*
+
+# datafolder
+/data
