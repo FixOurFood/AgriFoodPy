@@ -1,96 +1,49 @@
 import numpy as np
-import pandas as pd
+import xarray as xr
 import os
 
 from ..utils.list_tools import tolist
 
-
 data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
 available = ['FAOSTAT']
 
-attribute_names = ['Food', 'Energy', 'Fat', 'Protein']
+def FoodSupply(items, years, quantities, regions=None, elements=None):
 
-class FoodSupply:
+    _years = np.unique(years)
+    _items = np.unique(items)
 
-    def __init__(self, items, years, food = None, energy = None, fat = None, protein = None):
+    size = (len(_years), len(_items))
 
-        if np.all(np.array([food, energy, fat, protein]) == None):
-            raise ValueError('At least one attribute must be provided for an item, year combination')
+    ii = [np.searchsorted(_years, years), np.searchsorted(_items, items)]
 
-        if food is not None : self.food = food
-        if energy is not None : self.energy = energy
-        if fat is not None : self.fat = fat
-        if protein is not None : self.protein = protein
+    coords = {"Year" : _years,
+              "Item" : _items}
 
-        self.years = years
-        self.items = items
+    if regions is not None:
+        _regions = np.unique(regions)
+        ii.append(np.searchsorted(_regions, regions))
+        size = size + (len(_regions),)
+        coords["Region"] = _regions
 
-        d = {'Item':items, 'Year':years}
+    if elements is not None:
+        _elements = np.unique(elements)
+        ii.append(np.searchsorted(_elements, elements))
+        coords["Element"] = _elements
+        size = size + (len(_elements),)
 
-        attributes = [food, energy, fat, protein]
+    values = np.zeros(size)*np.nan
 
-        for i in range(len(attributes)):
-            if attributes[i] is not None:
-                d[attribute_names[i]] = attributes[i]
+    values[tuple(ii)] = quantities
 
-        self.data = pd.DataFrame(data = d)
+    data = xr.Dataset(data_vars = dict(value=(coords.keys(), values)), coords = coords)
 
-    def extract_item(self, items):
-
-        items = tolist(items)
-        out_data = self.data[self.data['Item'].isin(items)]
-
-        out_items = out_data['Item'].values
-        out_years = out_data['Year'].values
-
-        out_atr = np.repeat(None, len(attribute_names))
-
-        for i ,atr in enumerate(attribute_names):
-            try:
-                out_atr[i] = out_data[atr].values
-            except KeyError:
-                pass
-
-        out_food_supply = FoodSupply(out_items, out_years, out_atr[0], out_atr[1], out_atr[2], out_atr[3])
-
-        return out_food_supply
-
-    def extract_year(self, years):
-
-        years = tolist(years)
-        out_data = self.data[self.data['Year'].isin(years)]
-
-        out_items = out_data['Item'].values
-        out_years = out_data['Year'].values
-
-        out_atr = np.repeat(None, len(attribute_names))
-
-        for i ,atr in enumerate(attribute_names):
-            try:
-                out_atr[i] = out_data[atr].values
-            except KeyError:
-                pass
-
-        out_food_supply = FoodSupply(out_items, out_years, out_atr[0], out_atr[1], out_atr[2], out_atr[3])
-
-        return out_food_supply
+    return data
 
 def __getattr__(name):
     if name not in available:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}.")
 
-    _data_file = f'{data_dir}{name}.csv'
-    data = pd.read_csv(_data_file)
+    _data_file = f'{data_dir}{name}.nc'
+    data = xr.open_dataset(_data_file)
 
-    basedata = data[data['Element Code'].isin([10004])]
-
-    food = data[data['Element Code'].isin([10004])]['Value'].values
-    energy = data[data['Element Code'].isin([664])]['Value'].values
-    protein = data[data['Element Code'].isin([674])]['Value'].values
-    fat = data[data['Element Code'].isin([684])]['Value'].values
-
-    years = basedata['Year'].values
-    items = basedata['Item Code'].values
-
-    out_supply = FoodSupply(items, years, food, energy, fat, protein)
-    return out_supply
+    return data
