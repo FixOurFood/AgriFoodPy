@@ -129,7 +129,8 @@ dmypy.json
 .pyre/
 
 # geodatabases
-*.gdb*
+*.gdb
+*.gpkg
 
 # datafolder
 /data
