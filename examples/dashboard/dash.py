@@ -1,20 +1,23 @@
 import tkinter as tk
+from CreateToolTip import *
+
 import numpy as np
 import pandas as pd
+
+import warnings
+
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
 from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg, NavigationToolbar2Tk)
 
 import fair
 from fair.RCPs import rcp3pd, rcp45, rcp6, rcp85
-from CreateToolTip import *
 
-import sys
-sys.path.append('../..')
-from pyourfood import food
-from pyourfood.population.population_data import UN_world_1950_2019, UN_world_2020_2100
-from pyourfood.food.food_supply import FAOSTAT
-from pyourfood.utils.calendar_tools import days_in_year
+from agrifoodpy import food
+from agrifoodpy.population.population_data import UN_world_1950_2019, UN_world_2020_2100
+from agrifoodpy.food.food_supply import FAOSTAT
+from agrifoodpy.impact.impact import PN18
+from agrifoodpy.utils.calendar_tools import days_in_year
 
 """
 FixOurFood intervention Dashboard
