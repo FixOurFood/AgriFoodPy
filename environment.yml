@@ -5,7 +5,8 @@ channels:
   - defaults
 
 dependencies:
-  - python=3.9
+  - python>=3.9
+  - pip
   - numpy
   - netcdf4
   - xarray
@@ -13,3 +14,5 @@ dependencies:
   - ipython
   - pandas
   - matplotlib
+  - pip:
+    - fair
