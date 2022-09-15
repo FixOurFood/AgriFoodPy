@@ -3,8 +3,7 @@ from CreateToolTip import *
 
 import numpy as np
 import pandas as pd
-
-import warnings
+import xarray as xr
 
 import matplotlib.pyplot as plt
 from matplotlib.figure import Figure
@@ -14,10 +13,10 @@ import fair
 from fair.RCPs import rcp3pd, rcp45, rcp6, rcp85
 
 from agrifoodpy import food
-from agrifoodpy.population.population_data import UN_world_1950_2019, UN_world_2020_2100
-from agrifoodpy.food.food_supply import FAOSTAT
+from agrifoodpy.population.population_data import UN
+from agrifoodpy.food.food_supply import FAOSTAT, scale_food
 from agrifoodpy.impact.impact import PN18
-from agrifoodpy.utils.calendar_tools import days_in_year
+from agrifoodpy.impact import impact
 
 """
 FixOurFood intervention Dashboard
@@ -52,58 +51,118 @@ important widgets of the dashboard:
 
 """
 
+
+# ----------------------
+# GUI configuration
+# ----------------------
+
 font = ("Courier", 12)
-
-# load the food item data files for these codes
-PN18 = pd.read_csv('PN18.csv', sep=':')
-len_items = len(PN18)
-len_groups = len(np.unique(PN18['group']))
-
-index_label = np.unique(PN18['group'], return_index=True)[1]
-group_names = [PN18['group'][index] for index in sorted(index_label)]
-
-index_id = np.unique(PN18['group_id'], return_index=True)[1]
-group_ids = [PN18['group_id'][index] for index in sorted(index_id)]
-
 log_length = 25
 
-FAOSTAT_years = np.unique(FAOSTAT.years)
 
-FAOSTAT_years_all = np.concatenate([FAOSTAT_years, np.unique(UN_world_2020_2100.years)])
+# ----------------------
+# Regional configuration
+# ----------------------
 
-food_data = FAOSTAT.data
+area_pop = 826 #UK
+area_fao = 229 #UK
+years = np.arange(1961, 2100)
 
-emissions = np.zeros((len_items, len(FAOSTAT_years_all)))
-emissions_groups = np.zeros((len_groups, len(FAOSTAT_years_all)))
-weight = np.zeros_like(emissions)
-energy = np.zeros_like(emissions)
-proteins = np.zeros_like(emissions)
+# ------------------------------
+# Select population data from UN
+# ------------------------------
 
-# Last food supply estimated value is used as pivot value
-# to scale as a function of projected population
-past_population = UN_world_1950_2019.extract_year(FAOSTAT_years)
-population_pivot = past_population.populations[-1]
+pop_uk = UN.Medium.sel(Region=area_pop, Year=years)*1000
 
-population_ratio_projected = UN_world_2020_2100.populations / population_pivot
+pop_past = pop_uk[pop_uk["Year"] < 2020]
+pop_pivot = pop_uk[pop_uk["Year"] == 2020]
+pop_future = pop_uk[pop_uk["Year"] >= 2020]
+proj_pop_ratio = pop_future / pop_pivot.values
 
-# First half of the array is filled with estimations from FAOSTAT food supply data
-# Second half of the array is filled with scaled values according to population growth from pivot point
-days = days_in_year(FAOSTAT_years)
+# ---------------------------
+# Match FAOSTAT and PN18 data
+# ---------------------------
+matching = pd.read_csv("PN18 and FAOSTAT list matching matrix.csv", sep=":")
 
-for i, code in enumerate(PN18['code']):
+alternative = matching["Alternative"]
+alt_mask = ~np.isnan(alternative)
 
-    weight[i,:len(FAOSTAT_years)] = FAOSTAT.extract_item(code).food
-    weight[i,len(FAOSTAT_years):] = weight[i,len(FAOSTAT_years)-1]
+matching.drop("Alternative", axis=1, inplace=True)
+matching.fillna(0, inplace=True)
 
-    emissions[i, :len(FAOSTAT_years)] = FAOSTAT.extract_item(code).food * days * PN18['mean_emissions'][i] * past_population.populations * 1e3 / 1e12
-    emissions[i,len(FAOSTAT_years):] = population_ratio_projected * emissions[i,len(FAOSTAT_years)-1]
+food_impact = impact.match(PN18, matching)
+food_impact["GHG Emissions"].values[alt_mask] = alternative[alt_mask]
 
-    energy[i,:len(FAOSTAT_years)] = FAOSTAT.extract_item(code).energy
-    energy[i,len(FAOSTAT_years):] = energy[i,len(FAOSTAT_years)-1]
+co2e_g = food_impact["GHG Emissions"]/1000
 
-    proteins[i,:len(FAOSTAT_years)] = FAOSTAT.extract_item(code).protein
-    proteins[i,len(FAOSTAT_years):] = proteins[i,len(FAOSTAT_years)-1]
+# -----------------------------------------
+# Define food item groups
+# -----------------------------------------
 
+groups = {
+    "Cereals" : np.array([2511, 2513, 2514, 2515, 2516, 2517, 2518, 2520, 2531, 2532, 2533, 2534, 2535, 2807]),
+    "Pulses" : np.array([2546, 2547, 2549, 2555]),
+    "Sugar" : np.array([2536, 2537, 2541, 2542, 2543, 2558, 2562, 2570, 2571, 2572, 2573, 2574, 2576, 2577, 2578, 2579, 2580, 2581, 2582, 2586, 2745]),
+    "NutsSeed" : np.array([2551, 2552, 2557, 2560, 2561]),
+    "VegetablesFruits" : np.array([2563, 2601, 2602, 2605, 2611, 2612, 2613, 2614, 2615, 2616, 2617, 2618, 2619, 2620, 2625, 2641, 2775]),
+    "RuminantMeat" : np.array([2731, 2732]),
+    "OtherMeat" : np.array([2733, 2734, 2735, 2736]),
+    "Egg" : np.array([2949]),
+    "Dairy" : np.array([2740, 2743, 2948]),
+    "FishSeafood" : np.array([2761, 2762, 2763, 2764, 2765, 2766, 2767, 2768, 2769]),
+    "Other" : np.array([2630, 2633, 2635, 2640, 2642, 2645, 2655, 2656, 2657, 2658, 2680, 2737]),
+    "NonFood" : np.array([2559, 2575, 2659, 2781, 2782])
+}
+
+items_uk = np.hstack(list(groups.values()))
+
+group_labels = []
+group_names = list(groups.keys())
+
+for item in items_uk:
+    for ig, group in enumerate(group_names):
+        if item in groups[group]:
+            group_labels.append(list(groups.keys())[ig])
+
+
+# -----------------------------------------
+# Select food consumption data from FAOSTAT
+# -----------------------------------------
+
+elements_dict = {'production':0,
+            'imports':1,
+            'exports':2,
+            'stock':3,
+            'feed':4,
+            'seed':5,
+            'losses':6,
+            'processing':7,
+            'other':8,
+            'food':9,}
+
+food_uk = FAOSTAT.sel(Region=area_fao, Item=items_uk)
+food_uk = food_uk.assign_coords(dict(group=("Item", group_labels)))
+
+kcal_day = food_uk["kcal"]
+prot_day = food_uk["protein"]
+fats_day = food_uk["fat"]
+
+food_uk = food_uk[list(elements_dict.keys())]*1e9/pop_past/365.25
+food_uk = xr.concat([food_uk, food_uk.sel(Year=2019) * proj_pop_ratio], dim="Year")
+
+kcal_g = kcal_day / food_uk["food"]
+prot_g = prot_day / food_uk["food"]
+fats_g = fats_day / food_uk["food"]
+
+kcal_day_food_uk = food_uk * kcal_g
+prot_day_food_uk = food_uk * prot_g
+fats_day_food_uk = food_uk * fats_g
+co2e_day_food_uk = food_uk * co2e_g
+
+kcal_food_uk = kcal_day_food_uk * pop_uk
+prot_food_uk = prot_day_food_uk * pop_uk
+fats_food_uk = fats_day_food_uk * pop_uk
+co2e_food_uk = co2e_day_food_uk * pop_uk
 
 glossary_dict = {
     "CO2 concentration":"""Atmospheric CO2 concentration
@@ -197,81 +256,17 @@ def timescale_factor(timescale, final_scale, length, start, model = 'linear'):
         base[start + log_length:] = final_scale
     return base
 
-def scale_food(timescale, nutrient, ruminant, vegetarian_intervention, meatfree, vegetarian, seafood, eggs, dairy, model):
 
-    # Scale down ruminant meat consumption.
-    ruminant_fraction = (4-ruminant)/4
-    adoption = 'logistic' if model else 'linear'
-
-    ruminant_fraction = timescale_factor(timescale, ruminant_fraction, len(FAOSTAT_years_all), len(FAOSTAT_years)+1, model = adoption)
-    meat_fraction = (7-meatfree)/7
-    meat_fraction = timescale_factor(timescale, meat_fraction, len(FAOSTAT_years_all), len(FAOSTAT_years)+1, model = adoption)
-
-    total_nutrient_group = [np.sum(nutrient[PN18['group_id'] == 0], axis=0) for i in range(12)]
-    total_nutrient = np.sum(nutrient, axis=0)
-
-    total_nutrient_meat = total_nutrient_group[0] + total_nutrient_group[1]
-    total_nutrient_nomeat = total_nutrient - total_nutrient_meat
-    total_nutrient_scaled_ruminant =  total_nutrient_group[0] * ruminant_fraction
-
-    othermeat_fraction = meat_fraction * (total_nutrient_meat - total_nutrient_scaled_ruminant) / total_nutrient_group[1]
-
-    # Meat Free Days
-    if vegetarian_intervention == 0:
-        total_nutrient_scaled_othermeat =  total_nutrient_group[1] * othermeat_fraction
-        total_nutrient_scaled_meat = meat_fraction * (total_nutrient_scaled_othermeat + total_nutrient_scaled_ruminant)
-        total_nutrient_minus_scaled_meat = total_nutrient - total_nutrient_scaled_meat
-
-        for ac, ic in zip([eggs, dairy, seafood], [2, 3, 10]):
-            total_nutrient_minus_scaled_meat += (1-meat_fraction) * ~ac * total_nutrient_group[ic]
-
-        nomeat_fraction = total_nutrient_minus_scaled_meat / total_nutrient_nomeat
-        food_scale = np.ones((len_items, len(FAOSTAT_years_all))) * nomeat_fraction
-
-        ruminant_fraction *= meat_fraction
-        total_nutrient_meat *= meat_fraction
-
-        for ac, ic in zip([eggs, dairy, seafood], [2, 3, 10]):
-            if not ac:
-                food_scale[PN18['group_id'] == ic] *= meat_fraction
-
-        food_scale[PN18['group_id'] == 0] = ruminant_fraction
-        food_scale[PN18['group_id'] == 1] = othermeat_fraction
-
-    # Type of vegetarian diet
-    elif vegetarian_intervention == 1:
-        one_minus_logistic = 1 - timescale_factor(timescale, 0, len(FAOSTAT_years_all), len(FAOSTAT_years)+1, model = adoption)
-        if vegetarian == 0:
-            total_nutrient_scaled_othermeat =  total_nutrient_group[1] * othermeat_fraction
-            total_nutrient_scaled_meat = meat_fraction * (total_nutrient_scaled_othermeat + total_nutrient_scaled_ruminant)
-            total_nutrient_minus_scaled_meat = total_nutrient - total_nutrient_scaled_meat
-            nomeat_fraction = total_nutrient_minus_scaled_meat / total_nutrient_nomeat
-            ruminant_fraction *= meat_fraction
-            total_nutrient_meat *= meat_fraction
-            food_scale = np.ones((len_items, len(FAOSTAT_years_all))) * nomeat_fraction
-
-            food_scale[PN18['group_id'] == 0] = ruminant_fraction
-            food_scale[PN18['group_id'] == 1] = othermeat_fraction
-
-        else:
-            total_vegetarian_nutrient = total_nutrient
-
-            if vegetarian == 1: skip = [0]
-            if vegetarian == 2: skip = [0, 1]
-            if vegetarian == 3: skip = [0, 1, 10]
-            if vegetarian == 4: skip = [0, 1, 10, 2, 3]
-
-            for sk in skip:
-                total_vegetarian_nutrient -= total_nutrient_group[sk] * one_minus_logistic
-
-            vegetarian_fraction = total_nutrient / total_vegetarian_nutrient
-            food_scale = np.ones((len_items, len(FAOSTAT_years_all)))*vegetarian_fraction
-
-            for sk in skip:
-                food_scale[PN18['group_id'] == sk] = 1 - one_minus_logistic
-
-    food_scale[:, :len(FAOSTAT_years)] = 1
-    return food_scale
+# timescale : int from 1 to log_length
+# nutrient : string one of "weight, Energy, Proteins"
+# ruminant : int from 0 to 4
+# vegetarian_intervention : boolean
+# meatfree : int from 0 to 7
+# vegetarian : boolean
+# seafood : boolean
+# eggs : boolean
+# dairy : boolean
+# model : boolean
 
 # Functions to pack and unpack intervention widgets
 def modify_option_menu(option_menu, menu_value, new_choices):
@@ -356,140 +351,17 @@ def disable_vegetarian():
     vegetarian_label.configure(fg='gray')
     lbl_vegetarian_glossary.grid_forget()
 
-# function to generate the plots in tkinter canvas
 def plot():
 
-    # Read the selection and generate the arrays
-    plot_key = plot_option.get()
-    food_group_value = food_group_option.get()
+    to_plot = co2e_food_uk
 
-    timescale = timescale_slider.get()
-    ruminant = ruminant_slider.get()
-    vegetarian_intervention = veg_interv.get()
-    meatfree = meatfree_slider.get()
-    seafood = seafood_choice.get()
-    egg = egg_choice.get()
-    dairy = dairy_choice.get()
-    vegetarian = vegetarian_slider.get()
-    year = year_choice.get()
-    model = model_choice.get()
+    to_plot_groups = to_plot.groupby("group").sum()
 
-    if year:
-        years = FAOSTAT_years_all
-    else:
-        years = FAOSTAT_years
-
-
-    # Show or hide options to select food groups
-    if plot_key == "CO2 emission per food item":
-        food_group_menu.pack()
-    else:
-        food_group_menu.pack_forget()
-
-    # Clear previous plots
-    plot1.clear()
-    plot2.clear()
-    plot2.axis("off")
-
-    # protein supply [g / capita / day] 674
-    # kCal intake [kCal / capita / day] 664
-    # consumed food weight [kg / capita / day] 10004
-
-    if scaling_nutrient.get() == "Weight":
-        nutrient = weight
-    elif scaling_nutrient.get() == "Energy":
-        nutrient = energy
-    elif scaling_nutrient.get() == "Proteins":
-        nutrient = proteins
-
-    # obtain rescaled food supply
-    food_scale = scale_food(timescale, nutrient, ruminant, vegetarian_intervention, meatfree, vegetarian, seafood, egg, dairy, model)
-
-    scaled_emissions = emissions*food_scale
-    scaled_energy = energy*food_scale
-    scaled_proteins = proteins*food_scale
-
-    # per capita food supply emissions [kg CO2e / capita / year]
-    # This is computed multiplying the food supply per item (kg/capita/day)
-    # by the global mean specific GHGE per item [kg CO2e / kg], by the country population
-    # and by the number of days on a year
-
-    # category_emissions = np.zeros((len_categories, len(FAOSTAT_years)))
-    C, F, T = fair.forward.fair_scm(emissions=np.sum(scaled_emissions, axis = 0), useMultigas=False)
-
-    plot1.axvline(2020, color = 'k', alpha = 0.5, linestyle = 'dashed')
-
-    if plot_key == "CO2 concentration":
-        plot1.plot(years, C[:len(years)], c = 'k')
-        plot1.set_ylim((250,1700))
-        plot1.set_ylabel(r"$CO_2$ concentrations (PPM)")
-
-    elif plot_key == "CO2 emission per food group":
-
-        for i, id in enumerate(group_ids):
-            emissions_groups[i] = np.sum(scaled_emissions[PN18['group_id'] == id], axis=0)
-        emissions_cumsum_group = np.cumsum(emissions_groups, axis=0)
-
-        for i in reversed(range(len_groups)):
-            plot1.fill_between(years, emissions_cumsum_group[i][:len(years)], label = group_names[i], alpha=0.5)
-            plot1.plot(years, emissions_cumsum_group[i][:len(years)], color = 'k', linewidth=0.5)
-
-        plot1.legend(loc=2, fontsize=7)
-        plot1.set_ylim((-1,50))
-        plot1.set_ylabel(r"Fossil $CO_2$ Emissions (GtC)")
-
-    elif plot_key == "CO2 emission per food item":
-
-        mask = PN18['group']==food_group_value
-        emissions_cumsum = np.cumsum(scaled_emissions[mask], axis=0)
-        food_names = PN18['name'][mask].values
-
-        for i in reversed(range(len(food_names))):
-            plot1.fill_between(years, emissions_cumsum[i][:len(years)], label = food_names[i], alpha=0.5)
-            plot1.plot(years, emissions_cumsum[i][:len(years)], color='k', linewidth=0.5)
-
-        plot1.legend(loc=2, fontsize=7)
-        # plot1.set_ylim((-1,40))
-        plot1.set_ylabel(r"Fossil $CO_2$ Emissions (GtC)")
-
-    elif plot_key == "Nutrients":
-
-        plot2.axis("on")
-        plot1.plot(years, np.sum(scaled_energy, axis=0)[:len(years)], label = "Energy intake", color = 'Blue')
-        # plot1.set_ylim((150,700))
-        plot2.plot(years, np.sum(scaled_proteins, axis=0)[:len(years)], label = "Protein intake", color = 'Orange')
-        # plot2.set_ylim((10,50))
-        plot1.legend(loc=2, fontsize=7)
-        plot2.legend(loc=1, fontsize=7)
-        # plot1.set_ylim((-1,30))
-        # plot1.set_ylabel(r"Fossil $CO_2$ Emissions (GtC)")
-
-    elif plot_key == "Radiative forcing":
-        plot1.plot(years, F[:len(years)], c = 'k')
-        plot1.set_ylim((0,10))
-        plot1.set_ylabel(r"Total Radiative Forcing $(W/m^2)$")
-
-    elif plot_key == "Temperature anomaly":
-        plot1.plot(years, T[:len(years)], c = 'k')
-        plot1.set_ylim((0,5))
-        plot1.set_ylabel(r"Temperature anomaly (K)")
-
-    elif plot_key == "Land Use":
-        plot1.plot(years, T[:len(years)], c = 'k')
-        plot1.text(1975, 1, "placeholder plot for land use")
-        plot1.set_ylim((0,5))
-        plot1.set_ylabel(r"Temperature anomaly (K)")
-
-    # elif plot_key == "Land use":
-
-
-
-    plot1.set_xlabel("Year")
-    canvas.draw()
-
-    lbl_glossary.config(text=glossary_dict[plot_key], font=font)
-    lbl_vegetarian_glossary.config(text=vegetarian_diet_dict[vegetarian_slider.get()], font=font)
-
+    to_plot_groups_cumsum = to_plot_groups["food"].cumsum(dim="group")
+    years = to_plot_groups_cumsum.Year.values
+    for ig in reversed(range(len(groups))):
+        plot1.fill_between(years, to_plot_groups_cumsum[ig], alpha=0.5)
+        plot1.plot(years, to_plot_groups_cumsum[ig], color='k', linewidth=0.5)
 
 # -----------------------------------------
 #       MAIN WINDOW
