@@ -9,7 +9,7 @@ import warnings
 from ..utils.list_tools import tolist
 
 data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
-available = ['FAOSTAT']
+available = ['FAOSTAT', 'EAT_Lancet', 'RDA_eatwell', 'Nutrients']
 
 FAOSTAT_elements = ['production',
                     'imports',
