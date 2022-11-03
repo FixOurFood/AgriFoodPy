@@ -9,7 +9,7 @@ import warnings
 from ..utils.list_tools import tolist
 
 data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
-available = ['FAOSTAT', 'EAT_Lancet', 'RDA_eatwell', 'Nutrients']
+available = ['FAOSTAT', 'EAT_Lancet', 'RDA_eatwell', 'Nutrients', "Nutrients_FAOSTAT"]
 
 FAOSTAT_elements = ['production',
                     'imports',
@@ -155,6 +155,10 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
     else:
         size_show = 1
 
+    # Make sure NaN and inf do not interfere
+    food = food.fillna(0)
+    food = food.where(np.isfinite(food), other=0)
+
     food_sum = food.sum(dim=bar_dims)
 
     # If colors are not defined, generate a list from the standard cycling
@@ -164,6 +168,7 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
     # Plot the production and imports first
     cumul = 0
     for ie, element in enumerate(["production", "imports"]):
+        ax.hlines(ie, 0, cumul, color="k", alpha=0.2, linestyle="dashed", linewidth=0.5)
         if size_show == 1:
             ax.barh(ie, left = cumul, width=food_sum[element], color=colors[0])
             cumul +=food_sum[element]
@@ -175,6 +180,7 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
     # Then the rest of elements in reverse to keep dimension ordering
     cumul = 0
     for ie, element in enumerate(reversed(plot_elements[2:])):
+        ax.hlines(len_elements-1 - ie, 0, cumul, color="k", alpha=0.2, linestyle="dashed", linewidth=0.5)
         if size_show == 1:
             ax.barh(len_elements-1 - ie, left = cumul, width=food_sum[element], color=colors[0])
             cumul +=food_sum[element]
@@ -185,14 +191,14 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
 
     # Plot decorations
     ax.set_yticks(np.arange(len_elements), labels=plot_elements)
-    ax.set_yticks(ax.get_yticks())
+    # ax.set_yticks(ax.get_yticks())
     ax.tick_params(axis="x",direction="in", pad=-12)
     ax.invert_yaxis()  # labels read top-to-bottom
     ax.set_ylim(len_elements+1,-1)
 
     return ax
 
-def plot_years(food, show="Item", ax=None, colors=None, **kwargs):
+def plot_years(food, show="Item", ax=None, colors=None, label=None, **kwargs):
 
     # If no years are found in the dimensions, raise an exception
     sum_dims = list(food.dims)
@@ -222,12 +228,12 @@ def plot_years(food, show="Item", ax=None, colors=None, **kwargs):
 
     # Plot
     if size_cumsum == 1:
-        ax.fill_between(years, cumsum, alpha=0.5)
-        ax.plot(years, cumsum, color=colors[0], linewidth=0.5)
+        ax.fill_between(years, cumsum, color=colors[0], alpha=0.5)
+        ax.plot(years, cumsum, color=colors[0], linewidth=0.5, label=label)
     else:
         for id in reversed(range(size_cumsum)):
-            ax.fill_between(years, cumsum[id], alpha=0.5)
-            ax.plot(years, cumsum[id], color=colors[id], linewidth=0.5)
+            ax.fill_between(years, cumsum[id], color=colors[id], alpha=0.5)
+            ax.plot(years, cumsum[id], color=colors[id], linewidth=0.5, label=label)
 
     return ax
 
@@ -256,6 +262,11 @@ def __getattr__(name):
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}.")
 
     _data_file = f'{data_dir}{name}.nc'
-    data = xr.open_dataset(_data_file)
 
+    # If the file contains more than a single dataarray, then it will try
+    # to load it as a dataset
+    try:
+        data = xr.open_dataarray(_data_file)
+    except ValueError:
+        data = xr.open_dataset(_data_file)
     return data
