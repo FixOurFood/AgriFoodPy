@@ -14,8 +14,8 @@ from fair.RCPs import rcp3pd, rcp45, rcp6, rcp85
 
 from agrifoodpy import food
 from agrifoodpy.population.population_data import UN
-from agrifoodpy.food.food_supply import FAOSTAT, scale_food
-from agrifoodpy.impact.impact import PN18
+from agrifoodpy.food.food_supply import FAOSTAT, Nutrients_FAOSTAT, scale_food, plot_years
+from agrifoodpy.impact.impact import PN18_FAOSTAT
 from agrifoodpy.impact import impact
 
 """
@@ -57,8 +57,6 @@ important widgets of the dashboard:
 # ----------------------
 
 font = ("Courier", 12)
-log_length = 25
-
 
 # ----------------------
 # Regional configuration
@@ -82,21 +80,10 @@ proj_pop_ratio = pop_future / pop_pivot.values
 # ---------------------------
 # Match FAOSTAT and PN18 data
 # ---------------------------
-matching = pd.read_csv("PN18 and FAOSTAT list matching matrix.csv", sep=":")
-
-alternative = matching["Alternative"]
-alt_mask = ~np.isnan(alternative)
-
-matching.drop("Alternative", axis=1, inplace=True)
-matching.fillna(0, inplace=True)
-
-food_impact = impact.match(PN18, matching)
-food_impact["GHG Emissions"].values[alt_mask] = alternative[alt_mask]
-
-co2e_g = food_impact["GHG Emissions"]/1000
+co2e_g = PN18_FAOSTAT["GHG Emissions"]/1000
 
 # -----------------------------------------
-# Define food item groups
+# Define food item
 # -----------------------------------------
 
 groups = {
@@ -116,53 +103,40 @@ groups = {
 
 items_uk = np.hstack(list(groups.values()))
 
-group_labels = []
-group_names = list(groups.keys())
-
-for item in items_uk:
-    for ig, group in enumerate(group_names):
-        if item in groups[group]:
-            group_labels.append(list(groups.keys())[ig])
-
-
 # -----------------------------------------
 # Select food consumption data from FAOSTAT
 # -----------------------------------------
 
-elements_dict = {'production':0,
-            'imports':1,
-            'exports':2,
-            'stock':3,
-            'feed':4,
-            'seed':5,
-            'losses':6,
-            'processing':7,
-            'other':8,
-            'food':9,}
+# 1000Ton_food / Year
+food_uk = FAOSTAT.sel(Region=area_fao, Item=items_uk).drop("domestic")
 
-food_uk = FAOSTAT.sel(Region=area_fao, Item=items_uk)
-food_uk = food_uk.assign_coords(dict(group=("Item", group_labels)))
+meat_items = food_uk.sel(Item=food_uk.Item_group=="Meat").Item.values
+animal_items = food_uk.sel(Item=food_uk.Item_origin=="Animal Products").Item.values
+plant_items = food_uk.sel(Item=food_uk.Item_origin=="Vegetal Products").Item.values
 
-kcal_day = food_uk["kcal"]
-prot_day = food_uk["protein"]
-fats_day = food_uk["fat"]
+# g_food / cap / day
+food_cap_day = food_uk*1e9/pop_past/365.25
+food_cap_day = xr.concat([food_cap_day, food_cap_day.sel(Year=2019) * proj_pop_ratio], dim="Year")
 
-food_uk = food_uk[list(elements_dict.keys())]*1e9/pop_past/365.25
-food_uk = xr.concat([food_uk, food_uk.sel(Year=2019) * proj_pop_ratio], dim="Year")
+# kCal, g_pot, g_fat / g_food
+kcal_g = Nutrients_FAOSTAT.kcal.sel(Region=229)
+prot_g = Nutrients_FAOSTAT.protein.sel(Region=229)
+fats_g = Nutrients_FAOSTAT.fat.sel(Region=229)
 
-kcal_g = kcal_day / food_uk["food"]
-prot_g = prot_day / food_uk["food"]
-fats_g = fats_day / food_uk["food"]
+# kCal, g_pot, g_fat, g_co2e / cap / day
+kcal_cap_day = food_cap_day * kcal_g
+prot_cap_day = food_cap_day * prot_g
+fats_cap_day = food_cap_day * fats_g
+co2e_cap_day = food_cap_day * co2e_g
 
-kcal_day_food_uk = food_uk * kcal_g
-prot_day_food_uk = food_uk * prot_g
-fats_day_food_uk = food_uk * fats_g
-co2e_day_food_uk = food_uk * co2e_g
+# g_food, kCal, g_pot, g_fat, g_co2e / Year
+food_year_baseline = food_cap_day * pop_uk * 365.25
+kcal_year_baseline = kcal_cap_day * pop_uk * 365.25
+prot_year_baseline = prot_cap_day * pop_uk * 365.25
+fats_year_baseline = fats_cap_day * pop_uk * 365.25
+co2e_year_baseline = co2e_cap_day * pop_uk * 365.25
 
-kcal_food_uk = kcal_day_food_uk * pop_uk
-prot_food_uk = prot_day_food_uk * pop_uk
-fats_food_uk = fats_day_food_uk * pop_uk
-co2e_food_uk = co2e_day_food_uk * pop_uk
+group_names = np.unique(food_uk.Item_group.values)
 
 glossary_dict = {
     "CO2 concentration":"""Atmospheric CO2 concentration
@@ -243,34 +217,11 @@ vegetarian_diet_dict = {
 # dairy_checkbox    [0,1] if veg_interv == 1
 # vegetarian_slider [0,4] if veg_interv == 0
 
-def timescale_factor(timescale, final_scale, length, start, model = 'linear'):
-    base = np.ones(length)
-    mu = 1 - final_scale
-    if model == 'linear':
-        gradient = np.arange(timescale) / timescale
-        base[start : start + timescale] = 1 - mu*gradient
-        base[start + timescale:] = final_scale
-    elif model == 'logistic':
-        gradient = 1 / (1 + np.exp(-0.5*(log_length + 1 - timescale)*(np.arange(log_length) - timescale / 2)))
-        base[start : start + log_length] = 1 - mu*gradient
-        base[start + log_length:] = final_scale
-    return base
-
-
-# timescale : int from 1 to log_length
-# nutrient : string one of "weight, Energy, Proteins"
-# ruminant : int from 0 to 4
-# vegetarian_intervention : boolean
-# meatfree : int from 0 to 7
-# vegetarian : boolean
-# seafood : boolean
-# eggs : boolean
-# dairy : boolean
-# model : boolean
+def logistic(k, x0, xmax, xmin=0):
+    return 1 / (1 + np.exp(-k*(np.arange(xmax-xmin) - x0)))
 
 # Functions to pack and unpack intervention widgets
 def modify_option_menu(option_menu, menu_value, new_choices):
-
     menu_value.set('')
     option_menu['menu'].delete(0, 'end')
 
@@ -353,15 +304,93 @@ def disable_vegetarian():
 
 def plot():
 
-    to_plot = co2e_food_uk
+    # ----------------
+    # Get plot options
+    # ----------------
+    plot_key = plot_option.get()
+    food_group_key = food_group_option.get()
+    ruminant = ruminant_slider.get()
+    k = timescale_slider.get() / 10
 
-    to_plot_groups = to_plot.groupby("group").sum()
+    # timescale : int from 1 to log_length
+    # nutrient : string one of "weight, Energy, Proteins, Fat"
+    # vegetarian_intervention : boolean
+    # meatfree : int from 0 to 7
+    # vegetarian : boolean
+    # seafood : boolean
+    # eggs : boolean
+    # dairy : boolean
+    # model : boolean
 
-    to_plot_groups_cumsum = to_plot_groups["food"].cumsum(dim="group")
-    years = to_plot_groups_cumsum.Year.values
-    for ig in reversed(range(len(groups))):
-        plot1.fill_between(years, to_plot_groups_cumsum[ig], alpha=0.5)
-        plot1.plot(years, to_plot_groups_cumsum[ig], color='k', linewidth=0.5)
+    # Scale food system
+
+    if scaling_nutrient.get() == "Weight":
+        nutrient = food_year_baseline
+    elif scaling_nutrient.get() == "Energy":
+        nutrient = kcal_year_baseline
+    elif scaling_nutrient.get() == "Proteins":
+        nutrient = prot_year_baseline
+
+    x0 = 70
+    scale_ruminant = xr.DataArray(data = 1-(ruminant/4)*logistic(k, x0, 2100-1961), coords = {"Year":np.arange(1961,2100)})
+
+    scaling = scale_food(food=nutrient,
+                         scale= scale_ruminant,
+                         origin="imports",
+                         items=meat_items,
+                         constant=True,
+                         fallback="exports") / nutrient
+
+    co2e_year = co2e_year_baseline * scaling
+
+    # Clear previous plots
+    plot1.clear()
+    plot2.clear()
+    plot2.axis("off")
+
+    # Compute emissions using FAIR
+    total_emissions_gtco2e = (co2e_year["food"]*scaling["food"]).sum(dim="Item").to_numpy()/1e12
+    C, F, T = fair.forward.fair_scm(total_emissions_gtco2e, useMultigas=False)
+
+
+    # Plot
+    if plot_key == "CO2 concentration":
+        plot1.plot(co2e_year.Year.values, C, c = 'k')
+        plot1.set_ylabel(r"$CO_2$ concentrations (PPM)")
+
+    elif plot_key == "CO2 emission per food group":
+
+        # For some reason, xarray does not preserves the coordinates dtypes.
+        # Here, we manually assign them to strings again to allow grouping by Non-dimension coordinate strigns
+        co2e_year.Item_group.values = np.array(co2e_year.Item_group.values, dtype=str)
+        co2e_year_groups = co2e_year.groupby("Item_group").sum().rename({"Item_group":"Item"})
+        plot_years(co2e_year_groups["food"], ax=plot1)
+        plot1.set_ylim(0, 4e11)
+        plot1.set_xlim(1961,2100)
+
+    elif plot_key == "CO2 emission per food item":
+
+        # Can't index by alternative coordinate name, use xr.where instead and squeeze
+        co2e_year_item = co2e_year.sel(Item=co2e_year["Item_group"] == food_group_key).squeeze()
+        plot_years(co2e_year_item["food"], ax=plot1)
+
+    elif plot_key == "Nutrients":
+        pass
+
+    elif plot_key == "Radiative forcing":
+
+        plot1.plot(co2e_year.Year.values, F, c = 'k')
+        plot1.set_ylabel(r"Total Radiative Forcing $(W/m^2)$")
+
+    elif plot_key == "Temperature anomaly":
+
+        plot1.plot(co2e_year.Year.values, T, c = 'k')
+        plot1.set_ylabel(r"Temperature anomaly (K)")
+
+    elif plot_key == "Land Use":
+        pass
+
+    canvas.draw()
 
 # -----------------------------------------
 #       MAIN WINDOW
@@ -427,8 +456,8 @@ frame_diet = tk.Frame(frame_controls)
 
 scaling_nutrient = tk.StringVar(value='Weight')
 tk.Label(frame_diet, text = "Replace by", font=font).grid(row = 0, column = 0, sticky='W')
-for ic, label in enumerate(['Weight', 'Proteins', 'Energy']):
-    tk.Radiobutton(frame_diet, text = label,   variable = scaling_nutrient, value = label,   command=plot, font=font).grid(row = 0, column = ic+1, sticky='W')
+for ic, label in enumerate(['Weight', 'Proteins', 'Fat', 'Energy']):
+    tk.Radiobutton(frame_diet, text = label, variable = scaling_nutrient, value = label, command=plot, font=font).grid(row = 0, column = ic+1, sticky='W')
 
 ruminant_label = tk.Label(frame_diet, text="Reduce ruminant meat consumption", font=font)
 ruminant_slider = tk.Scale(frame_diet, from_=0, to=4, orient=tk.HORIZONTAL, command= lambda _: plot())
@@ -551,15 +580,16 @@ CreateToolTip(model_checkbox,
 'Use a logistic model instead of a linear model for interention adoption timescale')
 model_checkbox.pack()
 
-timescale_slider = tk.Scale(frame_plots, from_=1, to=log_length, orient=tk.HORIZONTAL, command= lambda _: plot())
+timescale_slider = tk.Scale(frame_plots, from_=1, to=10, orient=tk.HORIZONTAL, command= lambda _: plot())
 CreateToolTip(timescale_slider, \
 'Select the timescale in years over which the transformation '
 'takes place. 0 means the transformation occurs immediately.')
 timescale_slider.pack()
 
 # Figure widget
-fig, plot1 = plt.subplots(figsize = (5,5))
+fig, plot1 = plt.subplots(figsize = (4,6))
 plot2 = plot1.twinx()
+plt.tight_layout()
 
 fig.patch.set_facecolor('#D9D9D9')
 
