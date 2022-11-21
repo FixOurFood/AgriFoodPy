@@ -14,7 +14,7 @@ from fair.RCPs import rcp3pd, rcp45, rcp6, rcp85
 
 from agrifoodpy import food
 from agrifoodpy.population.population_data import UN
-from agrifoodpy.food.food_supply import FAOSTAT, Nutrients_FAOSTAT, scale_food, plot_years
+from agrifoodpy.food.food_supply import FAOSTAT, Nutrients_FAOSTAT, scale_food, plot_years, plot_bars
 from agrifoodpy.impact.impact import PN18_FAOSTAT
 from agrifoodpy.impact import impact
 
@@ -51,12 +51,12 @@ important widgets of the dashboard:
 
 """
 
-
 # ----------------------
 # GUI configuration
 # ----------------------
 
-font = ("Courier", 12)
+window = tk.Tk()
+font = tk.font.Font(family="times", size=12, weight="bold")
 
 # ----------------------
 # Regional configuration
@@ -64,7 +64,7 @@ font = ("Courier", 12)
 
 area_pop = 826 #UK
 area_fao = 229 #UK
-years = np.arange(1961, 2100)
+years = np.arange(1961, 2101)
 
 # ------------------------------
 # Select population data from UN
@@ -73,9 +73,8 @@ years = np.arange(1961, 2100)
 pop_uk = UN.Medium.sel(Region=area_pop, Year=years)*1000
 
 pop_past = pop_uk[pop_uk["Year"] < 2020]
-pop_pivot = pop_uk[pop_uk["Year"] == 2020]
 pop_future = pop_uk[pop_uk["Year"] >= 2020]
-proj_pop_ratio = pop_future / pop_pivot.values
+proj_pop_ones = xr.ones_like(pop_future)
 
 # ---------------------------
 # Match FAOSTAT and PN18 data
@@ -108,15 +107,15 @@ items_uk = np.hstack(list(groups.values()))
 # -----------------------------------------
 
 # 1000Ton_food / Year
-food_uk = FAOSTAT.sel(Region=area_fao, Item=items_uk).drop("domestic")
+food_uk = FAOSTAT.sel(Region=area_fao, Item=items_uk).drop(["domestic", "residual", "tourist"])
 
 meat_items = food_uk.sel(Item=food_uk.Item_group=="Meat").Item.values
 animal_items = food_uk.sel(Item=food_uk.Item_origin=="Animal Products").Item.values
 plant_items = food_uk.sel(Item=food_uk.Item_origin=="Vegetal Products").Item.values
 
 # g_food / cap / day
-food_cap_day = food_uk*1e9/pop_past/365.25
-food_cap_day = xr.concat([food_cap_day, food_cap_day.sel(Year=2019) * proj_pop_ratio], dim="Year")
+food_cap_day_baseline = food_uk*1e9/pop_past/365.25
+food_cap_day_baseline = xr.concat([food_cap_day_baseline, food_cap_day_baseline.sel(Year=2019) * proj_pop_ones], dim="Year")
 
 # kCal, g_pot, g_fat / g_food
 kcal_g = Nutrients_FAOSTAT.kcal.sel(Region=229)
@@ -124,98 +123,35 @@ prot_g = Nutrients_FAOSTAT.protein.sel(Region=229)
 fats_g = Nutrients_FAOSTAT.fat.sel(Region=229)
 
 # kCal, g_pot, g_fat, g_co2e / cap / day
-kcal_cap_day = food_cap_day * kcal_g
-prot_cap_day = food_cap_day * prot_g
-fats_cap_day = food_cap_day * fats_g
-co2e_cap_day = food_cap_day * co2e_g
+kcal_cap_day_baseline = food_cap_day_baseline * kcal_g
+prot_cap_day_baseline = food_cap_day_baseline * prot_g
+fats_cap_day_baseline = food_cap_day_baseline * fats_g
+co2e_cap_day_baseline = food_cap_day_baseline * co2e_g
+
+kcal_cap_day_baseline = xr.concat([kcal_cap_day_baseline, kcal_cap_day_baseline.sel(Year=2019) * proj_pop_ones], dim="Year")
+prot_cap_day_baseline = xr.concat([prot_cap_day_baseline, prot_cap_day_baseline.sel(Year=2019) * proj_pop_ones], dim="Year")
+fats_cap_day_baseline = xr.concat([fats_cap_day_baseline, fats_cap_day_baseline.sel(Year=2019) * proj_pop_ones], dim="Year")
 
 # g_food, kCal, g_pot, g_fat, g_co2e / Year
-food_year_baseline = food_cap_day * pop_uk * 365.25
-kcal_year_baseline = kcal_cap_day * pop_uk * 365.25
-prot_year_baseline = prot_cap_day * pop_uk * 365.25
-fats_year_baseline = fats_cap_day * pop_uk * 365.25
-co2e_year_baseline = co2e_cap_day * pop_uk * 365.25
+food_year_baseline = food_cap_day_baseline * pop_uk * 365.25
+kcal_year_baseline = kcal_cap_day_baseline * pop_uk * 365.25
+prot_year_baseline = prot_cap_day_baseline * pop_uk * 365.25
+fats_year_baseline = fats_cap_day_baseline * pop_uk * 365.25
+co2e_year_baseline = co2e_cap_day_baseline * pop_uk * 365.25
 
+baseline = {"Weight":food_year_baseline,
+            "Energy":kcal_year_baseline,
+            "Fat":fats_year_baseline,
+            "Proteins":prot_year_baseline,
+            "Emissions":co2e_year_baseline}
+
+# --------------------------------
+# String and glossary dictionaries
+# --------------------------------
 group_names = np.unique(food_uk.Item_group.values)
 
-glossary_dict = {
-    "CO2 concentration":"""Atmospheric CO2 concentration
-    measured in parts per million (PPM)""",
+from glossary import option_list, glossary_dict, vegetarian_diet_dict
 
-    "CO2 emission per food item":"""Fossil CO2 emissions to the atmosphere
-    measured in billion tons per year""",
-
-    "CO2 emission per food group":"""Fossil CO2 emissions to the atmosphere
-    measured in billion tons per year""",
-
-    "Radiative forcing":"""Balance between total energy
-    absorved by Earth's atmosphere and total
-    radiated energy back to space
-    measured in Watts per square meter""",
-
-    "Temperature anomaly":"""Difference in Celcius degrees
-    between projected atmospheric temperature
-    and baseline expected from stable emissions""",
-
-    "Nutrients":""" Daily protein and energy intake per capita,
-    in grams and kCal, respectively""",
-
-    "Land Use":""" Distribution of land use accross the UK """,
-
-    "Omnivorous diet":""" Omnivorous diets include the consumption of both
-    plant and animal origin food items.""",
-
-    "Semi-vegetarian diet":""" While not uniquely defined, semi-vegetarian diets
-    normally include the consumption of animal origin products, typically meat,
-    but limited to only certain species, or certain ocassions.""",
-
-    "Pescetarian diet":""" Pescetarian diet limits the consumption of animal
-    meat to only that coming from seafood and fish meat.""",
-
-    "Lacto-ovo-vegetarian diet":""" Lacto-ovo-vegetarian diets limits the
-    consumption of animal products to only dairy products and eggs,
-    supressing any kind of meat consumption.""",
-
-    "Vegan diet":""" Full vegetarian or vegan diets do not include any
-    product of animal origin, thus eliminating the consumption of meat, dairy
-    products and eggs.""",
-}
-
-vegetarian_diet_dict = {
-    0:"""Omnivorous diet: Consumption of all types
-    of food, including red (beef and goat) and white
-    (pig, poultry) meat, fish and seafood, dairy
-    products and eggs.""",
-
-    1:"""Semi-vegetarian diet: Moderated consumption
-    of meat, typically limited to white (pig, poultry)
-    meat and seafood. Includes dairy products and
-    eggs.""",
-
-    2:"""Pescetarian diet: No red (beef, goat) or
-    white (pig, poultry) meat consumption, processed
-    animal protein only from fish and seafood.
-    Includes dairy products and eggs.""",
-
-    3:"""Vegetarian diet: No processed animal
-    protein, including red (beef and goat), white
-    (pig and poultry) meat or fish and seafood.
-    Dairy products and eggs are consumed.""",
-
-    4:"""Vegan diet: No products of animal origin
-    are consumed. This includes red (beef and goat),
-    white (pig and poultry) meat, fish and seafood
-    or Dairy products and eggs"""
-}
-
-# Function to scale food item consumption to keep protein intake constant
-
-# ruminant_slider   [0-4]
-# veg_interv        [0,1]
-# meatfree_slider   [0,7] if veg_interv == 1
-# egg_checkbox      [0,1] if veg_interv == 1
-# dairy_checkbox    [0,1] if veg_interv == 1
-# vegetarian_slider [0,4] if veg_interv == 0
 
 def logistic(k, x0, xmax, xmin=0):
     return 1 / (1 + np.exp(-k*(np.arange(xmax-xmin) - x0)))
@@ -227,7 +163,7 @@ def modify_option_menu(option_menu, menu_value, new_choices):
 
     for choice in new_choices:
         option_menu['menu'].add_command(label=choice, command=tk._setit(menu_value, choice, lambda _: plot()))
-    plot_option.set(new_choices[0])
+    menu_value.set(new_choices[0])
 
 def pack_dietary_widgets():
     frame_farming.grid_forget()
@@ -237,14 +173,7 @@ def pack_dietary_widgets():
     button_farming.config(relief='raised')
     button_policy.config(relief='raised')
 
-    new_choices = ("CO2 emission per food group",
-        "CO2 emission per food item",
-        "CO2 concentration",
-        "Radiative forcing",
-        "Temperature anomaly",
-        "Nutrients")
-
-    modify_option_menu(opt_plot, plot_option, new_choices)
+    modify_option_menu(opt_plot, plot_option, option_list)
 
 def pack_farming_widgets():
     frame_policy.grid_forget()
@@ -254,15 +183,7 @@ def pack_farming_widgets():
     button_farming.config(relief='sunken')
     button_policy.config(relief='raised')
 
-    new_choices = ("CO2 emission per food group",
-        "CO2 emission per food item",
-        "CO2 concentration",
-        "Radiative forcing",
-        "Temperature anomaly",
-        "Land Use")
-
-    modify_option_menu(opt_plot, plot_option, new_choices)
-
+    modify_option_menu(opt_plot, plot_option, option_list)
 
 def pack_policy_widgets():
     frame_farming.grid_forget()
@@ -272,13 +193,7 @@ def pack_policy_widgets():
     button_farming.config(relief='raised')
     button_policy.config(relief='sunken')
 
-    new_choices = ("CO2 emission per food group",
-        "CO2 emission per food item",
-        "CO2 concentration",
-        "Radiative forcing",
-        "Temperature anomaly")
-
-    modify_option_menu(opt_plot, plot_option, new_choices)
+    modify_option_menu(opt_plot, plot_option, option_list)
 
 def disable_meatfree():
     vegetarian_slider.configure(state='normal', fg='black')
@@ -307,40 +222,49 @@ def plot():
     # ----------------
     # Get plot options
     # ----------------
-    plot_key = plot_option.get()
-    food_group_key = food_group_option.get()
-    ruminant = ruminant_slider.get()
-    k = timescale_slider.get() / 10
 
-    # timescale : int from 1 to log_length
-    # nutrient : string one of "weight, Energy, Proteins, Fat"
-    # vegetarian_intervention : boolean
-    # meatfree : int from 0 to 7
-    # vegetarian : boolean
-    # seafood : boolean
-    # eggs : boolean
-    # dairy : boolean
-    # model : boolean
+    plot_key = plot_option.get() # which plot is being shown
+    option_key = plot_suboption.get() # additional option for the plot
 
-    # Scale food system
+    k = timescale_slider.get() / 10 # [1,10]
 
-    if scaling_nutrient.get() == "Weight":
-        nutrient = food_year_baseline
-    elif scaling_nutrient.get() == "Energy":
-        nutrient = kcal_year_baseline
-    elif scaling_nutrient.get() == "Proteins":
-        nutrient = prot_year_baseline
+    ruminant = ruminant_slider.get() # [0,4]
+    meatfree = meatfree_slider.get() # [0,7] if veg_interv == 1
+
+    seafood = seafood_choice.get() # [0,1] if veg_interv == 1
+    egg = egg_choice.get() # [0,1] if veg_interv == 1
+    dairy = dairy_choice.get() # [0,1] if veg_interv == 1
+
+    nutrient = baseline[scaling_nutrient.get()]
 
     x0 = 70
-    scale_ruminant = xr.DataArray(data = 1-(ruminant/4)*logistic(k, x0, 2100-1961), coords = {"Year":np.arange(1961,2100)})
+    scale_ruminant = xr.DataArray(data = 1-(ruminant/4)*logistic(k, x0, 2101-1961), coords = {"Year":years})
 
-    scaling = scale_food(food=nutrient,
+    aux = scale_food(food=nutrient,
                          scale= scale_ruminant,
                          origin="imports",
-                         items=meat_items,
+                         items=groups["RuminantMeat"],
                          constant=True,
-                         fallback="exports") / nutrient
+                         fallback="exports")
 
+    scale_meatfree = xr.DataArray(data = 1-(meatfree/7)*logistic(k, x0, 2101-1961), coords = {"Year":years})
+
+    extra_items = np.concatenate((groups["RuminantMeat"], groups["OtherMeat"]))
+    if seafood:
+        extra_items = np.concatenate((extra_items, groups["FishSeafood"]))
+    if egg:
+        extra_items = np.concatenate((extra_items, groups["Egg"]))
+    if dairy:
+        extra_items = np.concatenate((extra_items, groups["Dairy"]))
+
+    aux = scale_food(food=aux,
+                         scale= scale_meatfree,
+                         origin="imports",
+                         items=extra_items,
+                         constant=True,
+                         fallback="exports")
+
+    scaling = aux / nutrient
     co2e_year = co2e_year_baseline * scaling
 
     # Clear previous plots
@@ -348,17 +272,16 @@ def plot():
     plot2.clear()
     plot2.axis("off")
 
-    # Compute emissions using FAIR
-    total_emissions_gtco2e = (co2e_year["food"]*scaling["food"]).sum(dim="Item").to_numpy()/1e12
-    C, F, T = fair.forward.fair_scm(total_emissions_gtco2e, useMultigas=False)
-
-
     # Plot
-    if plot_key == "CO2 concentration":
+    if plot_key == "CO2e concentration":
+
+        # Compute emissions using FAIR
+        total_emissions_gtco2e = (co2e_year["food"]*scaling["food"]).sum(dim="Item").to_numpy()/1e12
+        C, F, T = fair.forward.fair_scm(total_emissions_gtco2e, useMultigas=False)
         plot1.plot(co2e_year.Year.values, C, c = 'k')
         plot1.set_ylabel(r"$CO_2$ concentrations (PPM)")
 
-    elif plot_key == "CO2 emission per food group":
+    elif plot_key == "CO2e emission per food group":
 
         # For some reason, xarray does not preserves the coordinates dtypes.
         # Here, we manually assign them to strings again to allow grouping by Non-dimension coordinate strigns
@@ -366,29 +289,57 @@ def plot():
         co2e_year_groups = co2e_year.groupby("Item_group").sum().rename({"Item_group":"Item"})
         plot_years(co2e_year_groups["food"], ax=plot1)
         plot1.set_ylim(0, 4e11)
-        plot1.set_xlim(1961,2100)
-
-    elif plot_key == "CO2 emission per food item":
-
-        # Can't index by alternative coordinate name, use xr.where instead and squeeze
-        co2e_year_item = co2e_year.sel(Item=co2e_year["Item_group"] == food_group_key).squeeze()
-        plot_years(co2e_year_item["food"], ax=plot1)
 
     elif plot_key == "Nutrients":
         pass
 
     elif plot_key == "Radiative forcing":
 
+        # Compute emissions using FAIR
+        total_emissions_gtco2e = (co2e_year["food"]*scaling["food"]).sum(dim="Item").to_numpy()/1e12
+        C, F, T = fair.forward.fair_scm(total_emissions_gtco2e, useMultigas=False)
         plot1.plot(co2e_year.Year.values, F, c = 'k')
         plot1.set_ylabel(r"Total Radiative Forcing $(W/m^2)$")
 
     elif plot_key == "Temperature anomaly":
 
+        # Compute emissions using FAIR
+        total_emissions_gtco2e = (co2e_year["food"]*scaling["food"]).sum(dim="Item").to_numpy()/1e12
+        C, F, T = fair.forward.fair_scm(total_emissions_gtco2e, useMultigas=False)
         plot1.plot(co2e_year.Year.values, T, c = 'k')
         plot1.set_ylabel(r"Temperature anomaly (K)")
 
     elif plot_key == "Land Use":
         pass
+
+    elif plot_key == "CO2e emission per food item":
+
+        if option_key not in group_names:
+            modify_option_menu(suboption_menu, plot_suboption, group_names)
+            option_key = plot_suboption.get()
+
+        # Can't index by alternative coordinate name, use xr.where instead and squeeze
+        co2e_year_item = co2e_year.sel(Item=co2e_year["Item_group"] == option_key).squeeze()
+        plot_years(co2e_year_item["food"], ax=plot1)
+        plot1.set_ylim(bottom=0)
+
+    elif plot_key == "FAOSTAT Elements":
+
+        if option_key not in baseline.keys():
+            modify_option_menu(suboption_menu, plot_suboption, list(baseline.keys()))
+            option_key = plot_suboption.get()
+
+        bar_plot_baseline = baseline[option_key]
+
+        bar_plot_array = bar_plot_baseline * scaling
+        bar_plot_array.Item_origin.values = np.array(bar_plot_array.Item_origin.values, dtype=str)
+        bar_plot_array_groups = bar_plot_array.groupby("Item_origin").sum().rename({"Item_origin":"Item"})
+
+        plot_bars(bar_plot_array_groups.sel(Year=2099), labels=bar_plot_array_groups.Item.values, ax=plot1)
+        # plot1.set_xlim(0,x_limit)
+
+    lbl_glossary.config(text=glossary_dict[plot_key], font=font)
+    lbl_vegetarian_glossary.config(text=vegetarian_diet_dict[vegetarian_slider.get()], font=font)
 
     canvas.draw()
 
@@ -396,13 +347,14 @@ def plot():
 #       MAIN WINDOW
 # -----------------------------------------
 
-window = tk.Tk()
 window.geometry('960x980')
 window.title('FixOurFood FAIR carbon emission model')
 
 frame_categories = tk.Frame(window)
 frame_controls = tk.Frame(window)
 frame_plots = tk.Frame(window)
+
+font = tk.font.Font(family="Helvetica", size=12)
 
 frame_categories.pack(side = tk.TOP)
 frame_controls.pack(side=tk.LEFT)
@@ -457,7 +409,7 @@ frame_diet = tk.Frame(frame_controls)
 scaling_nutrient = tk.StringVar(value='Weight')
 tk.Label(frame_diet, text = "Replace by", font=font).grid(row = 0, column = 0, sticky='W')
 for ic, label in enumerate(['Weight', 'Proteins', 'Fat', 'Energy']):
-    tk.Radiobutton(frame_diet, text = label, variable = scaling_nutrient, value = label, command=plot, font=font).grid(row = 0, column = ic+1, sticky='W')
+    tk.Radiobutton(frame_diet, text=label, variable=scaling_nutrient, value=label, command=plot, font=font).grid(row = ic, column = 1, sticky='W')
 
 ruminant_label = tk.Label(frame_diet, text="Reduce ruminant meat consumption", font=font)
 ruminant_slider = tk.Scale(frame_diet, from_=0, to=4, orient=tk.HORIZONTAL, command= lambda _: plot())
@@ -517,26 +469,25 @@ CreateToolTip(vegetarian_slider, \
 '4: Vegan diet')
 
 # Widget packing using grid
-ruminant_label.grid(row = 1, column = 0, columnspan=2)
-ruminant_slider.grid(row = 1, column = 2)
+ruminant_label.grid(row = 4, column = 0, columnspan=2)
+ruminant_slider.grid(row = 4, column = 2)
 
-meatfree_rdbtn.grid(row = 2, column = 0, sticky='W')
-meatfree_label.grid(row = 3, column = 0, columnspan=2)
-meatfree_slider.grid(row = 3, column = 2)
-seafood_checkbox.grid(row = 4, column = 2, sticky='W')
-egg_checkbox.grid(row = 5, column = 2, sticky='W')
-dairy_checkbox.grid(row = 6, column = 2, sticky='W')
+meatfree_rdbtn.grid(row = 5, column = 0, sticky='W')
+meatfree_label.grid(row = 6, column = 0, columnspan=2)
+meatfree_slider.grid(row = 7, column = 2)
+seafood_checkbox.grid(row = 8, column = 2, sticky='W')
+egg_checkbox.grid(row = 8, column = 2, sticky='W')
+dairy_checkbox.grid(row = 9, column = 2, sticky='W')
 
-vegetarian_rdbtn.grid(row = 7, column = 0, sticky='W')
-vegetarian_label.grid(row = 8, column = 0, columnspan=2)
-vegetarian_slider.grid(row = 8, column = 2)
+vegetarian_rdbtn.grid(row = 10, column = 0, sticky='W')
+vegetarian_label.grid(row = 11, column = 0, columnspan=2)
+vegetarian_slider.grid(row = 11, column = 2)
 
 # Glossary widget
 lbl_vegetarian_glossary = tk.Label(frame_diet, text = vegetarian_diet_dict[vegetarian_slider.get()])
 # lbl_vegetarian_glossary.grid(row = 8, column = 0, columnspan=2, sticky='W')
 
 # ** Farming intervention widgets **
-
 frame_farming = tk.Frame(frame_controls)
 
 for irow in range(5):
@@ -549,17 +500,15 @@ tk.Label(frame_farming, text="Grazing versus feedlot",         font=font).grid(r
 tk.Label(frame_farming, text="Use calves from dairy herd",     font=font).grid(row = 4, column  = 0, columnspan=3)
 
 # ** Policy intervention widgets **
-
 frame_policy = tk.Frame(frame_controls)
-
 
 # -----------------------------------------
 #           PLOT CANVAS
 # -----------------------------------------
 
 # Plot option dropdown menu
-option_list = ["CO2 emission per food group", "CO2 emission per food item", "CO2 concentration", "Radiative forcing", "Temperature anomaly", "Nutrients"]
-plot_option = tk.StringVar(value="CO2 emission per food group")
+
+plot_option = tk.StringVar(value="FAOSTAT Elements")
 opt_plot = tk.OptionMenu(frame_plots, plot_option, *option_list, command = lambda _: plot())
 opt_plot.config(font=font)
 opt_plot.pack()
@@ -567,7 +516,7 @@ opt_plot.pack()
 # Year range option
 year_choice = tk.BooleanVar()
 year_choice.set(True)
-year_checkbox = tk.Checkbutton(frame_plots, text = 'Include future projections', offvalue = False, onvalue = True, variable = year_choice, command = plot)
+year_checkbox = tk.Checkbutton(frame_plots, text = 'Include future projections', offvalue = False, onvalue = True, variable = year_choice, command = plot, font=font)
 CreateToolTip(year_checkbox,
 'Include population growth projections '
 'by the UN for the 2020-2100 period.')
@@ -575,7 +524,7 @@ year_checkbox.pack()
 
 model_choice = tk.BooleanVar()
 model_choice.set(True)
-model_checkbox = tk.Checkbutton(frame_plots, text = 'Adoption model', offvalue = False, onvalue = True, variable = model_choice, command = plot)
+model_checkbox = tk.Checkbutton(frame_plots, text = 'Adoption model', offvalue = False, onvalue = True, variable = model_choice, command = plot, font=font)
 CreateToolTip(model_checkbox,
 'Use a logistic model instead of a linear model for interention adoption timescale')
 model_checkbox.pack()
@@ -587,25 +536,24 @@ CreateToolTip(timescale_slider, \
 timescale_slider.pack()
 
 # Figure widget
-fig, plot1 = plt.subplots(figsize = (4,6))
+fig, plot1 = plt.subplots(figsize = (8,6))
 plot2 = plot1.twinx()
-plt.tight_layout()
+# plt.tight_layout()
 
 fig.patch.set_facecolor('#D9D9D9')
 
 canvas = FigureCanvasTkAgg(fig, frame_plots)
 canvas.get_tk_widget().pack()
 
-
 # Glossary widget
 lbl_glossary = tk.Label(frame_plots, text = glossary_dict[plot_option.get()])
 lbl_glossary.pack()
 
-# Fodd group dropdown menu
-food_group_option = tk.StringVar(value = group_names[0])
-food_group_menu = tk.OptionMenu(frame_plots, food_group_option, *group_names, command = lambda _: plot())
-food_group_menu.config(font=font)
-food_group_menu.pack()
+# Plot option dropdown menu
+plot_suboption = tk.StringVar(value = group_names[0])
+suboption_menu = tk.OptionMenu(frame_plots, plot_suboption, *group_names, command = lambda _: plot())
+suboption_menu.config(font=font)
+suboption_menu.pack()
 
 ################# Setup #################
 
