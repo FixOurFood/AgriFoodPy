@@ -3,7 +3,7 @@ import xarray as xr
 import os
 
 data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
-available = ['PN18']
+available = ['PN18', 'PN18_FAOSTAT']
 
 def impacts(items, impacts, quantities, regions=None):
     _impacts = np.unique(impacts)
