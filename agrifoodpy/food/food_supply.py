@@ -128,7 +128,7 @@ def scale_food(food, scale, origin, items=None, constant=False, fallback=None):
 
     return out
 
-def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
+def plot_bars(food, show="Item", ax=None, colors=None, labels=None, **kwargs):
 
     if ax is None:
         f, ax = plt.subplots(**kwargs)
@@ -165,6 +165,10 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
     if colors is None:
         colors = [f"C{ic}" for ic in range(size_show)]
 
+    # If labels are not defined, generate a list from the dimensions
+    if labels is None:
+        labels = np.repeat("", len(colors))
+
     # Plot the production and imports first
     cumul = 0
     for ie, element in enumerate(["production", "imports"]):
@@ -174,7 +178,7 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
             cumul +=food_sum[element]
         else:
             for ii, val in enumerate(food_sum[element]):
-                ax.barh(ie, left = cumul, width=val, color=colors[ii])
+                ax.barh(ie, left = cumul, width=val, color=colors[ii], label=labels[ii])
                 cumul += val
 
     # Then the rest of elements in reverse to keep dimension ordering
@@ -186,15 +190,20 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
             cumul +=food_sum[element]
         else:
             for ii, val in enumerate(food_sum[element]):
-                ax.barh(len_elements-1 - ie, left = cumul, width=val, color=colors[ii])
+                ax.barh(len_elements-1 - ie, left = cumul, width=val, color=colors[ii], label=labels[ii])
                 cumul += val
 
     # Plot decorations
     ax.set_yticks(np.arange(len_elements), labels=plot_elements)
-    # ax.set_yticks(ax.get_yticks())
     ax.tick_params(axis="x",direction="in", pad=-12)
     ax.invert_yaxis()  # labels read top-to-bottom
     ax.set_ylim(len_elements+1,-1)
+
+    # Unique labels
+    if labels[0] != "":
+        handles, labels = ax.get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        ax.legend(by_label.values(), by_label.keys(), fontsize=6)
 
     return ax
 
@@ -234,6 +243,8 @@ def plot_years(food, show="Item", ax=None, colors=None, label=None, **kwargs):
         for id in reversed(range(size_cumsum)):
             ax.fill_between(years, cumsum[id], color=colors[id], alpha=0.5)
             ax.plot(years, cumsum[id], color=colors[id], linewidth=0.5, label=label)
+
+    ax.set_xlim(years.min(), years.max())
 
     return ax
 
