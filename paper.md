@@ -32,63 +32,41 @@ aas-journal: Astrophysical Journal <- The name of the AAS journal.
 
 `AgriFoodPy` is an open-source Python package for interoperability of agri-food
 data, simulation and modelling of agri-food systems.
-By employing a xarray as the base structure, AgriFoodPy provides access to many
-different types of available data including geospatial, time series and tabular
-data from different open sources.
+By employing xarray as the base structure, AgriFoodPy provides access to
+different types of available agri-food data, including geospatial, time series
+and tabular data from different open sources.
 
-It also provides a library of models across a range of observables and indicators,
-and connects with pre-existing atmospheric, land use change, socioechonomic, health
-models.  
+It also provides a library of models across a range of observables and
+indicators, and connects with pre-existing atmospheric, land use change, socio
+-economic and human health models.
 
 
 # Statement of need
 
+Providing food for an ever-growing population while reducing the impact of human
+activity on the environment has become one of the main current global
+challenges. Coordinated efforts must originate from effective policy-making
+based on evidence, including comparisons of estimates of the effects of
+interventions to the agri-food system.
 
+We present AgriFoodPy, an open-source python package for simulating, analysing,
+processing and modelling agri-food systems data, and providing access to post-
+processed data products from different surveys to help predict the effect of
+interventions on a range of stages of the food supply chain, including land use,
+food production, processing and consumption, waste management, with an emphasis
+on environmental and biodiversity impact of the food system.
 
+Open-source code and community development will allow a transparent view into
+analysis choices and data sources, which can help provide trustworthy evidence
+-based support to data-driven policy making. [@PN18]
 
-<!-- # Mathematics
+Data is stored and handled using xarray, a numpy array-like data structure which
+facilitates indexing and efficiency while also allowing different types of
+datasets to be used, including geo-spatial data, time series, tabular data, etc.
 
-Single dollars ($) are required for inline mathematics e.g. $f(x) = e^{\pi/x}$
-
-Double dollars make self-standing equations:
-
-$$\Theta(x) = \left\{\begin{array}{l}
-0\textrm{ if } x < 0\cr
-1\textrm{ else}
-\end{array}\right.$$
-
-You can also use plain \LaTeX for equations
-\begin{equation}\label{eq:fourier}
-\hat f(\omega) = \int_{-\infty}^{\infty} f(x) e^{i\omega x} dx
-\end{equation}
-and refer to \autoref{eq:fourier} from text.
-<!--  -->
-<!-- # Citations
-
-Citations to entries in paper.bib should be in
-[rMarkdown](http://rmarkdown.rstudio.com/authoring_bibliographies_and_citations.html)
-format.
-
-If you want to cite a software repository URL (e.g. something on GitHub without a preferred
-citation) then you can do it with the example BibTeX entry below for @fidgit.
-
-For a quick reference, the following citation commands can be used:
-- `@author:2001`  ->  "Author et al. (2001)"
-- `[@author:2001]` -> "(Author et al., 2001)"
-- `[@author1:2001; @author2:2001]` -> "(Author1 et al., 2001; Author2 et al., 2002)" --> -->
-
-<!-- # Figures
-
-Figures can be included like this:
-![Caption for example figure.\label{fig:example}](figure.png)
-and referenced from text using \autoref{fig:example}.
-
-Figure sizes can be customized by adding an optional second parameter:
-![Caption for example figure.](figure.png){ width=20% } -->
+While still in early stages of development, AgriFoodPy implements access to
+basic manipulation of these data structures and displaying routines.
 
 # Acknowledgements
-
-We acknowledge contributions from Brigitta Sipocz, Syrtis Major, and Semyeong
-Oh, and support from Kathryn Johnston during the genesis of this project.
 
 # References
