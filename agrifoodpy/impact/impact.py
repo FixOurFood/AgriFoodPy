@@ -1,3 +1,6 @@
+"""Impact module.
+"""
+
 import numpy as np
 import xarray as xr
 import os
@@ -6,6 +9,29 @@ data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
 available = ['PN18', 'PN18_FAOSTAT']
 
 def impacts(items, impacts, quantities, regions=None):
+    """Impact style dataset constructor
+
+    Parameters
+    ----------
+    items : (ni,) array_like
+        The item identifying ID or strings for which coordinates will be
+        created.
+    impacts : (nim,) array_like
+        The impact name strings for which coordinates will be created.
+    regions : (nr,) array_like, optional
+        The region identifying ID or strings for which coordinates will be
+        created.
+    quantities : (nim, ni, [nr,]) ndarray
+        Array containing the quantities for each combination of `Impact` and
+        `Item`, and optionally each `Region` and element dataarray.
+
+    Returns
+    -------
+    data : xarray.Dataset
+        Impact dataset containing the quantities for each `Impact` and `Item`
+        and, optionally, `Region`.
+    """
+
     _impacts = np.unique(impacts)
     _items = np.unique(items)
 
@@ -31,18 +57,23 @@ def impacts(items, impacts, quantities, regions=None):
     return data
 
 def match(impact, matching_matrix):
-    """
-    returns an impact xarray dataset with items matched through a matching
-    matrix.
+    """Matches an impact dataset to a new item base using a matching matrix
 
+    Parameters
+    ----------
     impact: xarray.DataSet
-        xarray dataset including at least a list of items, and impacts
-
+        xarray dataset including a list of items and impacts
     matching_matrix: pandas dataframe
-        Defines how items are matched from the impact dataset to the foodsupply
-        DataSet, with the values of the matrix indicating the scaling of the
-        impact quantities. Column names indicate the original item list.
-        Row names indicate the new item list.
+        Defines how items are matched from the input to the output datasets,
+        with the values of the matrix indicating the scaling of the
+        impact quantities. Column names indicate the original item list, while
+        row names indicate the new item list
+
+    Returns
+    -------
+    dataset_out : xarray.Dataset
+        FAOSTAT formatted Food Supply dataset with scaled quantities.
+
     """
 
     out_items = matching_matrix["Item Code"]
