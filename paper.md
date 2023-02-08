@@ -7,6 +7,7 @@ tags:
   - galactic dynamics
   - milky way
 authors:
+
   - name: Juan P. Cordero
     corresponding: true
     orcid: 0000-0002-6625-7656
@@ -36,11 +37,15 @@ authors:
     orcid: XXXX-XXXX-XXXX-XXXX
     equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
     affiliation: 1
+  - name: Aled Jones
+    orcid: XXXX-XXXX-XXXX-XXXX
+    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
 
 affiliations:
  - name: Department of Environment and Geography Wentworth Way, University of York, Heslington, York, YO10 5NG, UK
    index: 1
- - name: 
+ - name:
    index: 2
 date: November 2022
 bibliography: paper.bib
