@@ -1,3 +1,6 @@
+"""Population module.
+"""
+
 import numpy as np
 import os
 import xarray as xr

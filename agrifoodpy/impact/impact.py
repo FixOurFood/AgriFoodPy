@@ -1,3 +1,6 @@
+"""Impact module.
+"""
+
 import numpy as np
 import xarray as xr
 import os
@@ -90,18 +93,23 @@ def impacts(items, regions, quantities, datasets=None, long_format=True):
     return data
 
 def match(impact, matching_matrix):
-    """
-    returns an impact xarray dataset with items matched through a matching
-    matrix.
+    """Matches an impact dataset to a new item base using a matching matrix
 
+    Parameters
+    ----------
     impact: xarray.DataSet
-        xarray dataset including at least a list of items, and impacts
-
+        xarray dataset including a list of items and impacts
     matching_matrix: pandas dataframe
-        Defines how items are matched from the impact dataset to the foodsupply
-        DataSet, with the values of the matrix indicating the scaling of the
-        impact quantities. Column names indicate the original item list.
-        Row names indicate the new item list.
+        Defines how items are matched from the input to the output datasets,
+        with the values of the matrix indicating the scaling of the
+        impact quantities. Column names indicate the original item list, while
+        row names indicate the new item list
+
+    Returns
+    -------
+    dataset_out : xarray.Dataset
+        FAOSTAT formatted Food Supply dataset with scaled quantities.
+
     """
 
     out_items = matching_matrix["Item Code"]

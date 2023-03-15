@@ -1,3 +1,6 @@
+""" Food supply module.
+"""
+
 import numpy as np
 import xarray as xr
 import os
@@ -129,6 +132,35 @@ def FoodSupply(items, years, quantities, regions=None, elements=None, long_forma
     return data
 
 def scale_food(food, scale, origin, items=None, constant=False, fallback=None):
+    """Scales Food Supply style `food` quantities according to defined
+    constraints
+
+    Parameters
+    ----------
+    food : xarray.Dataset
+        Input Dataset containing at least the `production`, `imports`, `exports`
+        and `food` Dataarrays
+    scale : float, float array_like or xarray.Dataarray
+        Values to scale the `food` quantities.
+    origin : str, one of "production", "imports", "exports"
+        Dataset used to act as the source of the increased or decreased `food`
+        quantities.
+    items : list of int or list of str, optional
+        List of items to be scaled. If not provided, all items are scaled and
+        the `constant` boolean is ignored with a warning.
+    constant : bool, optional
+        If True, the sum of the `food` dataarray quantities is kept constant by
+        scaling the non selected items by the appropriate scaling factor.
+    fallback : str, optional
+        In case the an `origin` item quantity results in a negative value, it is
+        set to zero and the difference added or subtracted to the `fallback` Dataset
+
+    Returns
+    -------
+    out : xarray.Dataset
+        FAOSTAT formatted Food Supply dataset with scaled quantities.
+
+    """
 
     if np.isscalar(items):
         items = [items]
@@ -199,6 +231,43 @@ def scale_food(food, scale, origin, items=None, constant=False, fallback=None):
     return out
 
 def plot_bars(food, show="Item", ax=None, colors=None, labels=None, **kwargs):
+    """Horizontal dissagregated bar plot
+
+    Produces a horizontal bar the size of the total quantity summed along the
+    coordinates not specified by `show`, and coloured segments to indicate
+    the contribution of the each item along the specified `show` coordinate.
+    Bars for each dataarray of the dataset have their starting points on the end
+    of the previous bar, with `production` and `imports` placed on top, and the
+    remaining bars in reverse with `food` placed at the bottom.
+
+    Parameters
+    ----------
+    food : xarray.Dataset
+        Input Dataset containing at least: a `production`, `imports`, `exports`
+        and `food` Dataarray
+    show : str, optional
+        Name of the coordinate to dissagregate when filling the horizontal
+        bar. The quantities are summed along the remaining coordinates.
+        If the coordinate does not exist in the input, all
+        coordinates are summed and a plot with a single color is returned.
+    ax : matplotlib.pyplot.artist, optional
+        Axes on which to draw the plot. If not provided, a new artist is
+        created.
+    colors : list of str, optional
+        String list containing the colors for each of the elements in the "show"
+        coordinate.
+        If not defined, a color list is generated from the standard cycling.
+    label : list of str, optional
+        String list containing the labels for the legend of the elements in the
+        "show" coordinate
+    **kwargs : dict
+        Style options to be passed on to the actual plot function, such as
+        linewidth, alpha, etc.
+
+    Returns
+    -------
+        ax : matplotlib axes instance
+    """
 
     if ax is None:
         f, ax = plt.subplots(**kwargs)
@@ -278,6 +347,41 @@ def plot_bars(food, show="Item", ax=None, colors=None, labels=None, **kwargs):
     return ax
 
 def plot_years(food, show="Item", ax=None, colors=None, label=None, **kwargs):
+    """ Fill plot with quantities at each year value
+
+    Produces a vertical fill plot with quantities for each year on the "Year"
+    coordinate of the input dataset in the horizontal axis. If the "show"
+    coordinate exists, then the vertical fill plot is a stack of the sums of
+    the other coordinates at that year for each item in the "show" coordinate.
+
+    Parameters
+    ----------
+    food : xarray.Dataarray
+        Input Dataarray containing a "Year" coordinate and optionally, a
+
+    show : str, optional
+        Name of the coordinate to dissagregate when filling the vertical
+        plot. The quantities are summed along the remaining coordinates.
+        If the coordinate is not provided or does not exist in the input, all
+        coordinates are summed and a plot with a single fill curve is returned.
+    ax : matplotlib.pyplot.artist, optional
+        Axes on which to draw the plot. If not provided, a new artist is
+        created.
+    colors : list of str, optional
+        String list containing the colors for each of the elements in the "show"
+        coordinate.
+        If not defined, a color list is generated from the standard cycling.
+    label : list of str, optional
+        String list containing the labels for the legend of the elements in the
+        "show" coordinate
+    **kwargs : dict
+        Style options to be passed on to the actual plot function, such as
+        linewidth, alpha, etc.
+
+    Returns
+    -------
+        ax : matplotlib axes instance
+    """
 
     # If no years are found in the dimensions, raise an exception
     sum_dims = list(food.dims)
@@ -319,6 +423,29 @@ def plot_years(food, show="Item", ax=None, colors=None, label=None, **kwargs):
     return ax
 
 def SSR(food, items=None, per_item=False):
+    """Self-sufficiency ratio
+
+    Self-sufficiency ratio (SSR) or ratios for a list of item imports, exports
+    and production quantities.
+
+    Parameters
+    ----------
+    food : xarray.Dataset
+        Input Dataset containing an "Item" coordinate and, optionally, a "Year"
+        coordinate.
+    items : list, optional
+        list of items to compute the SSR for from the food Dataset. If no list
+        is provided, the SSR is computed for all items.
+    per_item : bool, optional
+        Whether to return an SSR for each item separately. Default is false
+
+    Returns
+    -------
+    data : xarray.Dataarray
+        Self-sufficiency ratio or ratios for the list of items, one for each
+        year of the input food Dataset "Year" coordinate.
+
+    """
 
     if items is not None:
         food = food.sel(Item=items)
@@ -329,6 +456,29 @@ def SSR(food, items=None, per_item=False):
     return food["production"].sum(dim="Item") / (food["production"] + food["imports"] - food["exports"]).sum(dim="Item")
 
 def IDR(food, items=None, per_item=False):
+    """Import-dependency ratio
+
+    Import-ependency ratio (IDR) or ratios for a list of item imports, exports
+    and production quantities.
+
+    Parameters
+    ----------
+    food : xarray.Dataset
+        Input Dataset containing an "Item" coordinate and, optionally, a "Year"
+        coordinate.
+    items : list, optional
+        list of items to compute the IDR for from the food Dataset. If no list
+        is provided, the IDR is computed for all items.
+    per_item : bool, optional
+        Whether to return an IDR for each item separately. Default is false.
+
+    Returns
+    -------
+    data : xarray.Datarray
+        Import-dependency ratio or ratios for the list of items, one for each
+        year of the input food Dataset "Year" coordinate.
+
+    """
 
     if items is not None:
         food = food.sel(Item=items)
