@@ -31,6 +31,10 @@ def impacts(items, regions, quantities, datasets=None, long_format=True):
         `Region` with one dataarray per element in `dataset`.
     """
 
+    # if the input has a single element, proceed with long format
+    if np.isscalar(quantities):
+        long_format = True
+
     quantities = np.array(quantities)
 
     # Identify unique values in coordinates
@@ -75,8 +79,8 @@ def impacts(items, regions, quantities, datasets=None, long_format=True):
             data[dataset] = (coords, values)
 
     else:
-        quantities = quantities[:, ii[0], :]
-        quantities = quantities[:, :, ii[1]]
+        quantities = quantities[:, ii[0]]
+        quantities = quantities[..., ii[1]]
 
         # Create a datasets, one at a time
         for id, dataset in enumerate(datasets):
