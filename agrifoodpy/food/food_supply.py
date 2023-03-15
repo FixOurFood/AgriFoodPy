@@ -29,60 +29,105 @@ FAOSTAT_elements = ['production',
                     'food',
                     ]
 
-def FoodSupply(items, years, quantities, regions=None, elements=None):
-    """FAOSTAT style dataset constructor
-
+def FoodSupply(items, years, quantities, regions=None, elements=None, long_format=True):
+    """ Food Supply style dataset constructor
+     
     Parameters
     ----------
     items : (ni,) array_like
-        The item identifying ID or strings for which coordinates will be
+        The Item identifying ID or strings for which coordinates will be
         created.
-    years : (ny,) array_like
-        The year number for which coordinates will be created.
-    regions : (nr,) array_like
+    years : years : (ny,) array_like
+        The year values for which coordinates will be created.
+    quantities : ([ne], ni, ny, [nr]) ndarray
+        Array containing the food quantity for each combination of `Item`,
+        `Year` and, optionally `Region`.
+    regions : (nr,) array_like, optional
         The region identifying ID or strings for which coordinates will be
         created.
-    elements : (ne,) array_like
-        The element strings for which separate datasets will be created.
-    quantities : (ny, ni, [nr,] [ne,]) ndarray
-        Array containing the quantities for each combination of `Year` and
-        `Item`, and optionally each `Region` and element dataarray.
+    long_format : bool
+        Boolean flag to interpret data in long or wide format
+    elemements : (ne,) array_like, optional
+        Array with element name strings. If `elements` is provided, a dataset
+        is created for each element in `elements` with the quantities being each
+        of the sub-arrays indexed by the first coordinate of the input array.
 
     Returns
     -------
     data : xarray.Dataset
-        FAOSTAT formatted Food Supply dataset containing the quantities for each
-        `Year` and `Item` and, optionally, `Region`.
-        If `elements` are provided, a dataarray is generated for each one.
+        Food Supply dataset containing the food quantity for each `Item`, `Year`
+        and `Region` with one dataarray per element in `elements`.
     """
 
-    _years = np.unique(years)
+    # if the input has a single element, proceed with long format
+    if np.isscalar(quantities):
+        long_format = True
+
+    quantities = np.array(quantities)
+
+    # Identify unique values in coordinates
     _items = np.unique(items)
+    _years = np.unique(years)
+    coords = {"Item" : _items,
+              "Year" : _years,} 
 
-    size = (len(_years), len(_items))
+    # find positions in output array to organize data
+    ii = [np.searchsorted(_items, items), np.searchsorted(_years, years)]
+    size = (len(_items), len(_years))
 
-    ii = [np.searchsorted(_years, years), np.searchsorted(_items, items)]
-
-    coords = {"Year" : _years,
-              "Item" : _items}
-
+    # If regions and are provided, add the coordinate information 
     if regions is not None:
         _regions = np.unique(regions)
         ii.append(np.searchsorted(_regions, regions))
         size = size + (len(_regions),)
         coords["Region"] = _regions
 
-    if elements is not None:
-        _elements = np.unique(elements)
-        ii.append(np.searchsorted(_elements, elements))
-        coords["Element"] = _elements
-        size = size + (len(_elements),)
+    # Create empty dataset
+    data = xr.Dataset(coords = coords)
 
-    values = np.zeros(size)*np.nan
+    if long_format:
+        # dataset, quantities
+        ndims = 2
+    else:
+        # dataset, coords
+        ndims = len(coords)+1
+    
+    # make sure the long format has the right number of dimensions
+    while len(quantities.shape) < ndims:
+        quantities = np.expand_dims(quantities, axis=0)
 
-    values[tuple(ii)] = quantities
+    # If no elements names are given, then create generic ones,
+    # one for each dataset
+    if elements is None:
+        elements = [f"Quantity {id}" for id in range(quantities.shape[0])]
 
-    data = xr.Dataset(data_vars = dict(value=(coords.keys(), values)), coords = coords)
+    # Else, if a single string is given, transform to list. If doesn't match
+    # the number of datasets created above, xarray will return an error.
+    elif isinstance(elements, str):
+        elements = [elements]
+
+    if long_format:
+        # Create a datasets, one at a time
+        for ie, element in enumerate(elements):
+            values = np.zeros(size)*np.nan
+            values[tuple(ii)] = quantities[ie]
+            data[element] = (coords, values)
+
+    else:
+        quantities = quantities[:, ii[0]]
+        if len(quantities.shape) < ndims:
+            quantities = np.expand_dims(quantities, axis=0)
+
+        quantities = quantities[:, :, ii[1]]
+        if len(quantities.shape) < ndims:
+            quantities = np.expand_dims(quantities, axis=0)
+
+        if regions is not None:
+            quantities = quantities[..., ii[2]]
+        # Create a datasets, one at a time
+        for ie, element in enumerate(elements):
+            values = quantities[ie]
+            data[element] = (coords, values)
 
     return data
 
