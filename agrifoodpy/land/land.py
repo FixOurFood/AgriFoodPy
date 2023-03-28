@@ -9,7 +9,7 @@ from itertools import product
 data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
 
 resolutions = [100, 200, 500, 1000, 2000]
-datasets = ["CEH", "ALC"]
+datasets = ["CEH", "ALC", "CEHLCdomagg", "CEHLCdomtar", "CEHLCperagg", "CEHLCpertar"]
 arrays = [f"{d}_{r}" for d, r in product(datasets, resolutions)]
 
 def __getattr__(name):
