@@ -277,8 +277,8 @@ def plot_bars(food, show="Item", ax=None, colors=None, labels=None, **kwargs):
     plot_elements = ["production", "imports", "exports", "food"]
 
     for element in plot_elements:
-        if element not in input_elements:
-            elements.remove(element)
+        if element not in FAOSTAT_elements:
+            plot_elements.remove(element)
 
     for element in input_elements:
         if element not in plot_elements and element in FAOSTAT_elements:
