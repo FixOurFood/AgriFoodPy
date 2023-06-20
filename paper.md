@@ -2,41 +2,79 @@
 title: 'AgriFoodPy: a package for modelling food systems'
 tags:
   - Python
-  - astronomy
-  - dynamics
-  - galactic dynamics
-  - milky way
+  
 authors:
-
   - name: Juan P. Cordero
     corresponding: true
     orcid: 0000-0002-6625-7656
     equal-contrib: true
     affiliation: 1 # (Multiple affiliations must be quoted)
+
   - name: Sarah L. Bridle
     orcid: 0000-0002-0128-1006
     equal-contrib: true # (This is how you can denote equal contributions between multiple authors)
     affiliation: 1
+
+  - name: Kevin Donkers
+    orcid: XXXX-XXXX-XXXX-XXXX
+    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
+
+  - name: Ian Harrison
+    orcid: XXXX-XXXX-XXXX-XXXX
+    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
+
   - name: Angelina Frankowska
     orcid: XXXX-XXXX-XXXX-XXXX
     equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
     affiliation: 1
-  - name: Ximena Schmidt
+
+  - name: Michelle Cain
     orcid: XXXX-XXXX-XXXX-XXXX
     equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
     affiliation: 1
-  - name: Christian Reynolds
+
+  - name: Katherine Denby
     orcid: XXXX-XXXX-XXXX-XXXX
     equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
     affiliation: 1
+
+  - name: Bob Doherty
+    orcid: XXXX-XXXX-XXXX-XXXX
+    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
+
   - name: Alana Kluczkovski
     orcid: XXXX-XXXX-XXXX-XXXX
     equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
     affiliation: 1
+
+  - name: Jez Frendenburgh
+    orcid: XXXX-XXXX-XXXX-XXXX
+    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
+
+  - name: Neil Ward
+    orcid: XXXX-XXXX-XXXX-XXXX
+    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
+
+  - name: Ximena Schmidt
+    orcid: XXXX-XXXX-XXXX-XXXX
+    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
+
+  - name: Christian Reynolds
+    orcid: XXXX-XXXX-XXXX-XXXX
+    equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
+    affiliation: 1
+
   - name: Jacqueline Silva
     orcid: XXXX-XXXX-XXXX-XXXX
     equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
     affiliation: 1
+
   - name: Aled Jones
     orcid: XXXX-XXXX-XXXX-XXXX
     equal-contrib: false # (This is how you can denote equal contributions between multiple authors)
