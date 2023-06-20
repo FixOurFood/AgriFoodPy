@@ -1,7 +1,6 @@
 name: agrifoodpy
 
 channels:
-  - conda-forge
   - defaults
 
 dependencies:

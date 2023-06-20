@@ -1,3 +1,6 @@
+""" Food supply module.
+"""
+
 import numpy as np
 import xarray as xr
 import os
@@ -26,39 +29,138 @@ FAOSTAT_elements = ['production',
                     'food',
                     ]
 
-def FoodSupply(items, years, quantities, regions=None, elements=None):
+def FoodSupply(items, years, quantities, regions=None, elements=None, long_format=True):
+    """ Food Supply style dataset constructor
+     
+    Parameters
+    ----------
+    items : (ni,) array_like
+        The Item identifying ID or strings for which coordinates will be
+        created.
+    years : years : (ny,) array_like
+        The year values for which coordinates will be created.
+    quantities : ([ne], ni, ny, [nr]) ndarray
+        Array containing the food quantity for each combination of `Item`,
+        `Year` and, optionally `Region`.
+    regions : (nr,) array_like, optional
+        The region identifying ID or strings for which coordinates will be
+        created.
+    long_format : bool
+        Boolean flag to interpret data in long or wide format
+    elemements : (ne,) array_like, optional
+        Array with element name strings. If `elements` is provided, a dataset
+        is created for each element in `elements` with the quantities being each
+        of the sub-arrays indexed by the first coordinate of the input array.
 
-    _years = np.unique(years)
+    Returns
+    -------
+    data : xarray.Dataset
+        Food Supply dataset containing the food quantity for each `Item`, `Year`
+        and `Region` with one dataarray per element in `elements`.
+    """
+
+    # if the input has a single element, proceed with long format
+    if np.isscalar(quantities):
+        long_format = True
+
+    quantities = np.array(quantities)
+
+    # Identify unique values in coordinates
     _items = np.unique(items)
+    _years = np.unique(years)
+    coords = {"Item" : _items,
+              "Year" : _years,} 
 
-    size = (len(_years), len(_items))
+    # find positions in output array to organize data
+    ii = [np.searchsorted(_items, items), np.searchsorted(_years, years)]
+    size = (len(_items), len(_years))
 
-    ii = [np.searchsorted(_years, years), np.searchsorted(_items, items)]
-
-    coords = {"Year" : _years,
-              "Item" : _items}
-
+    # If regions and are provided, add the coordinate information 
     if regions is not None:
         _regions = np.unique(regions)
         ii.append(np.searchsorted(_regions, regions))
         size = size + (len(_regions),)
         coords["Region"] = _regions
 
-    if elements is not None:
-        _elements = np.unique(elements)
-        ii.append(np.searchsorted(_elements, elements))
-        coords["Element"] = _elements
-        size = size + (len(_elements),)
+    # Create empty dataset
+    data = xr.Dataset(coords = coords)
 
-    values = np.zeros(size)*np.nan
+    if long_format:
+        # dataset, quantities
+        ndims = 2
+    else:
+        # dataset, coords
+        ndims = len(coords)+1
+    
+    # make sure the long format has the right number of dimensions
+    while len(quantities.shape) < ndims:
+        quantities = np.expand_dims(quantities, axis=0)
 
-    values[tuple(ii)] = quantities
+    # If no elements names are given, then create generic ones,
+    # one for each dataset
+    if elements is None:
+        elements = [f"Quantity {id}" for id in range(quantities.shape[0])]
 
-    data = xr.Dataset(data_vars = dict(value=(coords.keys(), values)), coords = coords)
+    # Else, if a single string is given, transform to list. If doesn't match
+    # the number of datasets created above, xarray will return an error.
+    elif isinstance(elements, str):
+        elements = [elements]
+
+    if long_format:
+        # Create a datasets, one at a time
+        for ie, element in enumerate(elements):
+            values = np.zeros(size)*np.nan
+            values[tuple(ii)] = quantities[ie]
+            data[element] = (coords, values)
+
+    else:
+        quantities = quantities[:, ii[0]]
+        if len(quantities.shape) < ndims:
+            quantities = np.expand_dims(quantities, axis=0)
+
+        quantities = quantities[:, :, ii[1]]
+        if len(quantities.shape) < ndims:
+            quantities = np.expand_dims(quantities, axis=0)
+
+        if regions is not None:
+            quantities = quantities[..., ii[2]]
+        # Create a datasets, one at a time
+        for ie, element in enumerate(elements):
+            values = quantities[ie]
+            data[element] = (coords, values)
 
     return data
 
 def scale_food(food, scale, origin, items=None, constant=False, fallback=None):
+    """Scales Food Supply style `food` quantities according to defined
+    constraints
+
+    Parameters
+    ----------
+    food : xarray.Dataset
+        Input Dataset containing at least the `production`, `imports`, `exports`
+        and `food` Dataarrays
+    scale : float, float array_like or xarray.Dataarray
+        Values to scale the `food` quantities.
+    origin : str, one of "production", "imports", "exports"
+        Dataset used to act as the source of the increased or decreased `food`
+        quantities.
+    items : list of int or list of str, optional
+        List of items to be scaled. If not provided, all items are scaled and
+        the `constant` boolean is ignored with a warning.
+    constant : bool, optional
+        If True, the sum of the `food` dataarray quantities is kept constant by
+        scaling the non selected items by the appropriate scaling factor.
+    fallback : str, optional
+        In case the an `origin` item quantity results in a negative value, it is
+        set to zero and the difference added or subtracted to the `fallback` Dataset
+
+    Returns
+    -------
+    out : xarray.Dataset
+        FAOSTAT formatted Food Supply dataset with scaled quantities.
+
+    """
 
     if np.isscalar(items):
         items = [items]
@@ -128,7 +230,44 @@ def scale_food(food, scale, origin, items=None, constant=False, fallback=None):
 
     return out
 
-def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
+def plot_bars(food, show="Item", ax=None, colors=None, labels=None, **kwargs):
+    """Horizontal dissagregated bar plot
+
+    Produces a horizontal bar the size of the total quantity summed along the
+    coordinates not specified by `show`, and coloured segments to indicate
+    the contribution of the each item along the specified `show` coordinate.
+    Bars for each dataarray of the dataset have their starting points on the end
+    of the previous bar, with `production` and `imports` placed on top, and the
+    remaining bars in reverse with `food` placed at the bottom.
+
+    Parameters
+    ----------
+    food : xarray.Dataset
+        Input Dataset containing at least: a `production`, `imports`, `exports`
+        and `food` Dataarray
+    show : str, optional
+        Name of the coordinate to dissagregate when filling the horizontal
+        bar. The quantities are summed along the remaining coordinates.
+        If the coordinate does not exist in the input, all
+        coordinates are summed and a plot with a single color is returned.
+    ax : matplotlib.pyplot.artist, optional
+        Axes on which to draw the plot. If not provided, a new artist is
+        created.
+    colors : list of str, optional
+        String list containing the colors for each of the elements in the "show"
+        coordinate.
+        If not defined, a color list is generated from the standard cycling.
+    label : list of str, optional
+        String list containing the labels for the legend of the elements in the
+        "show" coordinate
+    **kwargs : dict
+        Style options to be passed on to the actual plot function, such as
+        linewidth, alpha, etc.
+
+    Returns
+    -------
+        ax : matplotlib axes instance
+    """
 
     if ax is None:
         f, ax = plt.subplots(**kwargs)
@@ -138,8 +277,8 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
     plot_elements = ["production", "imports", "exports", "food"]
 
     for element in plot_elements:
-        if element not in input_elements:
-            elements.remove(element)
+        if element not in FAOSTAT_elements:
+            plot_elements.remove(element)
 
     for element in input_elements:
         if element not in plot_elements and element in FAOSTAT_elements:
@@ -165,6 +304,10 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
     if colors is None:
         colors = [f"C{ic}" for ic in range(size_show)]
 
+    # If labels are not defined, generate a list from the dimensions
+    if labels is None:
+        labels = np.repeat("", len(colors))
+
     # Plot the production and imports first
     cumul = 0
     for ie, element in enumerate(["production", "imports"]):
@@ -174,7 +317,7 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
             cumul +=food_sum[element]
         else:
             for ii, val in enumerate(food_sum[element]):
-                ax.barh(ie, left = cumul, width=val, color=colors[ii])
+                ax.barh(ie, left = cumul, width=val, color=colors[ii], label=labels[ii])
                 cumul += val
 
     # Then the rest of elements in reverse to keep dimension ordering
@@ -186,19 +329,59 @@ def plot_bars(food, show="Item", ax=None, colors=None, **kwargs):
             cumul +=food_sum[element]
         else:
             for ii, val in enumerate(food_sum[element]):
-                ax.barh(len_elements-1 - ie, left = cumul, width=val, color=colors[ii])
+                ax.barh(len_elements-1 - ie, left = cumul, width=val, color=colors[ii], label=labels[ii])
                 cumul += val
 
     # Plot decorations
     ax.set_yticks(np.arange(len_elements), labels=plot_elements)
-    # ax.set_yticks(ax.get_yticks())
     ax.tick_params(axis="x",direction="in", pad=-12)
     ax.invert_yaxis()  # labels read top-to-bottom
     ax.set_ylim(len_elements+1,-1)
 
+    # Unique labels
+    if labels[0] != "":
+        handles, labels = ax.get_legend_handles_labels()
+        by_label = dict(zip(labels, handles))
+        ax.legend(by_label.values(), by_label.keys(), fontsize=6)
+
     return ax
 
 def plot_years(food, show="Item", ax=None, colors=None, label=None, **kwargs):
+    """ Fill plot with quantities at each year value
+
+    Produces a vertical fill plot with quantities for each year on the "Year"
+    coordinate of the input dataset in the horizontal axis. If the "show"
+    coordinate exists, then the vertical fill plot is a stack of the sums of
+    the other coordinates at that year for each item in the "show" coordinate.
+
+    Parameters
+    ----------
+    food : xarray.Dataarray
+        Input Dataarray containing a "Year" coordinate and optionally, a
+
+    show : str, optional
+        Name of the coordinate to dissagregate when filling the vertical
+        plot. The quantities are summed along the remaining coordinates.
+        If the coordinate is not provided or does not exist in the input, all
+        coordinates are summed and a plot with a single fill curve is returned.
+    ax : matplotlib.pyplot.artist, optional
+        Axes on which to draw the plot. If not provided, a new artist is
+        created.
+    colors : list of str, optional
+        String list containing the colors for each of the elements in the "show"
+        coordinate.
+        If not defined, a color list is generated from the standard cycling.
+    label : list of str, optional
+        String list containing the labels for the legend of the elements in the
+        "show" coordinate
+    **kwargs : dict
+        Style options to be passed on to the actual plot function, such as
+        linewidth, alpha, etc.
+
+    Returns
+    -------
+        ax : matplotlib axes instance
+    """
 
     # If no years are found in the dimensions, raise an exception
     sum_dims = list(food.dims)
@@ -235,9 +418,34 @@ def plot_years(food, show="Item", ax=None, colors=None, label=None, **kwargs):
             ax.fill_between(years, cumsum[id], color=colors[id], alpha=0.5)
             ax.plot(years, cumsum[id], color=colors[id], linewidth=0.5, label=label)
 
+    ax.set_xlim(years.min(), years.max())
+
     return ax
 
 def SSR(food, items=None, per_item=False):
+    """Self-sufficiency ratio
+
+    Self-sufficiency ratio (SSR) or ratios for a list of item imports, exports
+    and production quantities.
+
+    Parameters
+    ----------
+    food : xarray.Dataset
+        Input Dataset containing an "Item" coordinate and, optionally, a "Year"
+        coordinate.
+    items : list, optional
+        list of items to compute the SSR for from the food Dataset. If no list
+        is provided, the SSR is computed for all items.
+    per_item : bool, optional
+        Whether to return an SSR for each item separately. Default is false
+
+    Returns
+    -------
+    data : xarray.Dataarray
+        Self-sufficiency ratio or ratios for the list of items, one for each
+        year of the input food Dataset "Year" coordinate.
+
+    """
 
     if items is not None:
         food = food.sel(Item=items)
@@ -248,6 +456,29 @@ def SSR(food, items=None, per_item=False):
     return food["production"].sum(dim="Item") / (food["production"] + food["imports"] - food["exports"]).sum(dim="Item")
 
 def IDR(food, items=None, per_item=False):
+    """Import-dependency ratio
+
+    Import-ependency ratio (IDR) or ratios for a list of item imports, exports
+    and production quantities.
+
+    Parameters
+    ----------
+    food : xarray.Dataset
+        Input Dataset containing an "Item" coordinate and, optionally, a "Year"
+        coordinate.
+    items : list, optional
+        list of items to compute the IDR for from the food Dataset. If no list
+        is provided, the IDR is computed for all items.
+    per_item : bool, optional
+        Whether to return an IDR for each item separately. Default is false.
+
+    Returns
+    -------
+    data : xarray.Datarray
+        Import-dependency ratio or ratios for the list of items, one for each
+        year of the input food Dataset "Year" coordinate.
+
+    """
 
     if items is not None:
         food = food.sel(Item=items)

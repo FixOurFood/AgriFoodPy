@@ -1,48 +1,115 @@
+"""Impact module.
+"""
+
 import numpy as np
 import xarray as xr
 import os
 
 data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
-available = ['PN18']
+available = ['PN18', 'PN18_FAOSTAT']
 
-def impacts(items, impacts, quantities, regions=None):
-    _impacts = np.unique(impacts)
+def impacts(items, regions, quantities, datasets=None, long_format=True):
+    """Impact style dataset constructor
+
+    Parameters
+    ----------
+    items : (ny,) array_like
+        The Item identifying ID or strings for which coordinates will be
+        created.
+    regions : (nr,) array_like, optional
+        The region identifying ID or strings for which coordinates will be
+        created.
+    quantities : (ny, nr) ndarray
+        Array containing the quantities for each combination of `Item` and
+        `Region`.
+    datasets : (nd,) array_like, optional
+        Array with model name strings
+    long_format : bool
+        Boolean flag to interpret data in long or wide format
+
+    Returns
+    -------
+    data : xarray.Dataset
+        Impact dataset containing the impact for each `Item` and
+        `Region` with one dataarray per element in `dataset`.
+    """
+
+    # if the input has a single element, proceed with long format
+    if np.isscalar(quantities):
+        long_format = True
+
+    quantities = np.array(quantities)
+
+    # Identify unique values in coordinates
     _items = np.unique(items)
+    _regions = np.unique(regions)
 
-    size = (len(_impacts), len(_items))
+    coords = {"Item" : _items,
+              "Region" : _regions}
 
-    ii = [np.searchsorted(_impacts, impacts), np.searchsorted(_items, items)]
+    # find positions in output array to organize data
+    ii = [np.searchsorted(_items, items), np.searchsorted(_regions, regions)]
+    size = (len(_items), len(_regions))
 
-    coords = {"Year" : _impacts,
-              "Item" : _items}
+    # Create empty dataset
+    data = xr.Dataset(coords = coords)
 
-    if regions is not None:
-        _regions = np.unique(regions)
-        ii.append(np.searchsorted(_regions, regions))
-        size = size + (len(_regions),)
-        coords["Region"] = _regions
+    if long_format:
+        ndims = 2
+    else:
+        ndims = 3
 
-    values = np.zeros(size)*np.nan
+    # make sure the long format has two dimensions
+    # One along items and regions, one along datasets
+    while len(quantities.shape) < ndims:
+        quantities = np.expand_dims(quantities, axis=0)
 
-    values[tuple(ii)] = quantities
+    # If no dataset names are given, then create generic ones, one for each
+    # dataset
+    if datasets is None:
+        datasets = [f"Impact {id}" for id in range(quantities.shape[0])]
 
-    data = xr.Dataset(data_vars = dict(value=(coords.keys(), values)), coords = coords)
+    # Else, if a single string is given, transform to list. If doesn't match
+    # the number of datasets created above, this will spit a list later.
+    elif isinstance(datasets, str):
+        datasets = [datasets]
+
+    if long_format:
+        # Create a datasets, one at a time
+        for id, dataset in enumerate(datasets):
+            values = np.zeros(size)*np.nan
+            values[tuple(ii)] = quantities[id]
+            data[dataset] = (coords, values)
+
+    else:
+        quantities = quantities[:, ii[0]]
+        quantities = quantities[..., ii[1]]
+
+        # Create a datasets, one at a time
+        for id, dataset in enumerate(datasets):
+            values = quantities[id]
+            data[dataset] = (coords, values)
 
     return data
 
 def match(impact, matching_matrix):
-    """
-    returns an impact xarray dataset with items matched through a matching
-    matrix.
+    """Matches an impact dataset to a new item base using a matching matrix
 
+    Parameters
+    ----------
     impact: xarray.DataSet
-        xarray dataset including at least a list of items, and impacts
-
+        xarray dataset including a list of items and impacts
     matching_matrix: pandas dataframe
-        Defines how items are matched from the impact dataset to the foodsupply
-        DataSet, with the values of the matrix indicating the scaling of the
-        impact quantities. Column names indicate the original item list.
-        Row names indicate the new item list.
+        Defines how items are matched from the input to the output datasets,
+        with the values of the matrix indicating the scaling of the
+        impact quantities. Column names indicate the original item list, while
+        row names indicate the new item list
+
+    Returns
+    -------
+    dataset_out : xarray.Dataset
+        FAOSTAT formatted Food Supply dataset with scaled quantities.
+
     """
 
     out_items = matching_matrix["Item Code"]
