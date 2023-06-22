@@ -1,0 +1,493 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!DOCTYPE article PUBLIC "-//NLM//DTD JATS (Z39.96) Journal Publishing DTD v1.2 20190208//EN"
+                  "JATS-publishing1.dtd">
+<article xmlns:mml="http://www.w3.org/1998/Math/MathML" xmlns:xlink="http://www.w3.org/1999/xlink" dtd-version="1.2" article-type="other">
+<front>
+<journal-meta>
+<journal-id></journal-id>
+<journal-title-group>
+<journal-title>Journal of Open Source Software</journal-title>
+<abbrev-journal-title>JOSS</abbrev-journal-title>
+</journal-title-group>
+<issn publication-format="electronic">2475-9066</issn>
+<publisher>
+<publisher-name>Open Journals</publisher-name>
+</publisher>
+</journal-meta>
+<article-meta>
+<article-id pub-id-type="publisher-id">0</article-id>
+<article-id pub-id-type="doi">N/A</article-id>
+<title-group>
+<article-title>AgriFoodPy: a package for modelling food
+systems</article-title>
+</title-group>
+<contrib-group>
+<contrib contrib-type="author" corresp="yes">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-6625-7656</contrib-id>
+<name>
+<surname>Cordero</surname>
+<given-names>Juan P.</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+<xref ref-type="corresp" rid="cor-1"><sup>*</sup></xref>
+</contrib>
+<contrib contrib-type="author">
+<contrib-id contrib-id-type="orcid">https://orcid.org/0000-0002-0128-1006</contrib-id>
+<name>
+<surname>Bridle</surname>
+<given-names>Sarah L.</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Donkers</surname>
+<given-names>Kevin</given-names>
+</name>
+<xref ref-type="aff" rid="aff-2"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Harrison</surname>
+<given-names>Ian</given-names>
+</name>
+<xref ref-type="aff" rid="aff-3"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Frankowska</surname>
+<given-names>Angelina</given-names>
+</name>
+<xref ref-type="aff" rid="aff-4"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Cain</surname>
+<given-names>Michelle</given-names>
+</name>
+<xref ref-type="aff" rid="aff-4"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Denby</surname>
+<given-names>Katherine</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Doherty</surname>
+<given-names>Bob</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Kluczkovski</surname>
+<given-names>Alana</given-names>
+</name>
+<xref ref-type="aff" rid="aff-1"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Frendenburgh</surname>
+<given-names>Jez</given-names>
+</name>
+<xref ref-type="aff" rid="aff-5"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Ward</surname>
+<given-names>Neil</given-names>
+</name>
+<xref ref-type="aff" rid="aff-5"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Schmidt</surname>
+<given-names>Ximena</given-names>
+</name>
+<xref ref-type="aff" rid="aff-6"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Reynolds</surname>
+<given-names>Christian</given-names>
+</name>
+<xref ref-type="aff" rid="aff-7"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Silva</surname>
+<given-names>Jacqueline</given-names>
+</name>
+<xref ref-type="aff" rid="aff-8"/>
+</contrib>
+<contrib contrib-type="author">
+<name>
+<surname>Jones</surname>
+<given-names>Aled</given-names>
+</name>
+<xref ref-type="aff" rid="aff-9"/>
+</contrib>
+<aff id="aff-1">
+<institution-wrap>
+<institution>Department of Environment and Geography Wentworth Way,
+University of York, Heslington, York, YO10 5NG, UK</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-2">
+<institution-wrap>
+<institution></institution>
+</institution-wrap>
+</aff>
+<aff id="aff-3">
+<institution-wrap>
+<institution></institution>
+</institution-wrap>
+</aff>
+<aff id="aff-4">
+<institution-wrap>
+<institution></institution>
+</institution-wrap>
+</aff>
+<aff id="aff-5">
+<institution-wrap>
+<institution>Vice Chancellor’s Office, University of East Anglia,
+Norwich, NR4 7TJ UK</institution>
+</institution-wrap>
+</aff>
+<aff id="aff-6">
+<institution-wrap>
+<institution></institution>
+</institution-wrap>
+</aff>
+<aff id="aff-7">
+<institution-wrap>
+<institution></institution>
+</institution-wrap>
+</aff>
+<aff id="aff-8">
+<institution-wrap>
+<institution></institution>
+</institution-wrap>
+</aff>
+</contrib-group>
+<author-notes>
+<corresp id="cor-1">* E-mail: <email></email></corresp>
+</author-notes>
+<volume>¿VOL?</volume>
+<issue>¿ISSUE?</issue>
+<fpage>¿PAGE?</fpage>
+<permissions>
+<copyright-statement>Authors of papers retain copyright and release the
+work under a Creative Commons Attribution 4.0 International License (CC
+BY 4.0)</copyright-statement>
+<copyright-year>2022</copyright-year>
+<copyright-holder>The article authors</copyright-holder>
+<license license-type="open-access" xlink:href="https://creativecommons.org/licenses/by/4.0/">
+<license-p>Authors of papers retain copyright and release the work under
+a Creative Commons Attribution 4.0 International License (CC BY
+4.0)</license-p>
+</license>
+</permissions>
+<kwd-group kwd-group-type="author">
+<kwd>Python</kwd>
+</kwd-group>
+</article-meta>
+</front>
+<body>
+<sec id="summary">
+  <title>Summary</title>
+  <p><monospace>AgriFoodPy</monospace> is an open-source Python package
+  for interoperability of datasets, simulation and modelling of agrifood
+  systems. By employing xarray
+  (<xref alt="Hoyer &amp; Hamman, 2017" rid="ref-hoyer2017xarray" ref-type="bibr">Hoyer
+  &amp; Hamman, 2017</xref>) as the primary data structure, AgriFoodPy
+  provides access to a range of available agrifood data through manually
+  formated arrays, including geospatial, time series and tabular data
+  from different open sources. The framework is region agnostic and will
+  provide facilities to model and simulate arbitrary data regardless of
+  its geographic origin.</p>
+  <p>Open-source code and community development will allow a transparent
+  view into analysis choices and data sources, which can help provide
+  trustworthy evidence-based support to data-driven policy making.
+  AgriFoodPy is developed and maintained by a diverse community of
+  domain experts with a focus on software sustainability and
+  interoperability.</p>
+  <p>Version 0.1 provides access global agrifood datasets including
+  geospatial land use and classification data
+  (<xref alt="Morton, 2022" rid="ref-CEH" ref-type="bibr">Morton,
+  2022</xref>), food supply
+  (<xref alt="FAO, 2022" rid="ref-FAOSTAT" ref-type="bibr">FAO,
+  2022</xref>), life cycle assestment
+  (<xref alt="Poore &amp; Nemecek, 2018" rid="ref-PN18" ref-type="bibr">Poore
+  &amp; Nemecek, 2018</xref>) and population
+  data(<xref alt="Nations&quot;, 2022" rid="ref-UN" ref-type="bibr">Nations&quot;,
+  2022</xref>). Also included is a library of intervention models across
+  a range of observables and indicators, which connects with
+  pre-existing atmospheric, land use change, socio-economic and human
+  health models.</p>
+  <p>Future releases will provide access to more models and community
+  contributed datasets formatted using xarray, as well as implementing a
+  pipeline manager to perform end-to-end simulations of agrifood systems
+  and predictions of diferent scenarios.</p>
+</sec>
+<sec id="statement-of-need">
+  <title>Statement of need</title>
+  <p>Providing food for an ever-growing population while reducing the
+  impact of human activity on the environment has become one of the main
+  current global challenges. Local and and intergovernmental independent
+  committees (https://www.theccc.org.uk/) (https://www.ipcc.ch/) have
+  reported the importance of food production on climate change. The
+  scenarios and projections in their reports also highlighted the need
+  for precise and transparent modelling of the different aspects of the
+  food system to help stakeholders understand the effects of consumption
+  patterns and farming practices.</p>
+  <p>Coordinated efforts to achieve a sustainable food system must
+  originate from effective policy-making based on evidence, careful
+  choice of metrics and indicators to describe the state of the food
+  system, and accurate estimates of how these metrics change under
+  different scenarios.</p>
+  <p>Existing datasets and analisys software usually rely on non
+  standardized data structures and predominantly closed-source code.
+  This difficults research and independent scrutiny of food system
+  inverventions projections and the impact of policy on environmental,
+  socio-economic and health indicators. Moreover, this forces
+  researchers to routinely expend significant effort replicating or
+  re-developing existing code to reduce and analyse data. Additionally,
+  the opacity of some data sources and analysis choices make it
+  difficult to draw conclusions from equivalent comparisons between
+  different interventions and policy decisions.</p>
+  <p>Several open initiatives exist focused on analysis and modelling of
+  agrifood and enviromental related data, Research community has also
+  developed open-source python packages that adress some individual
+  aspects of modelling agrifood systems, such as geospatial imaging
+  (e.g. <monospace>Geopandas</monospace>
+  (<xref alt="Jordahl et al., 2020" rid="ref-geopandas" ref-type="bibr">Jordahl
+  et al., 2020</xref>), <monospace>Rasterio</monospace>
+  (<xref alt="Gillies &amp; others, 2013--" rid="ref-rasterio" ref-type="bibr">Gillies
+  &amp; others, 2013--</xref>)), atmospheric and climate modelling
+  (<monospace>Fair</monospace>
+  (<xref alt="Leach et al., 2021" rid="ref-fair" ref-type="bibr">Leach
+  et al., 2021</xref>)). Other open softwares also exist in other
+  languages, including agriculture and farming
+  (<monospace>APSIM</monospace>
+  (<xref alt="Holzworth et al., 2014" rid="ref-APSIM" ref-type="bibr">Holzworth
+  et al., 2014</xref>)), life cycle assestment
+  (<monospace>OpenLCA</monospace>, www.openlca.org).</p>
+  <p>AgriFoodPy will provide a consistent standard for agrifood data
+  distribution, while also allowing external models and packages to
+  coexist and interoperate to allow a holistic approach to agrifood
+  modelling.</p>
+</sec>
+<sec id="acknowledgements">
+  <title>Acknowledgements</title>
+</sec>
+</body>
+<back>
+<ref-list>
+  <ref id="ref-PN18">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Poore</surname><given-names>J.</given-names></name>
+        <name><surname>Nemecek</surname><given-names>T.</given-names></name>
+      </person-group>
+      <article-title>Reducing food&amp;#x2019;s environmental impacts through producers and consumers</article-title>
+      <source>Science</source>
+      <year iso-8601-date="2018">2018</year>
+      <volume>360</volume>
+      <issue>6392</issue>
+      <uri>https://www.science.org/doi/abs/10.1126/science.aaq0216</uri>
+      <pub-id pub-id-type="doi">10.1126/science.aaq0216</pub-id>
+      <fpage>987</fpage>
+      <lpage>992</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-hoyer2017xarray">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Hoyer</surname><given-names>S.</given-names></name>
+        <name><surname>Hamman</surname><given-names>J.</given-names></name>
+      </person-group>
+      <article-title>Xarray: N-D labeled arrays and datasets in Python</article-title>
+      <source>Journal of Open Research Software</source>
+      <publisher-name>Ubiquity Press</publisher-name>
+      <year iso-8601-date="2017">2017</year>
+      <volume>5</volume>
+      <issue>1</issue>
+      <uri>https://doi.org/10.5334/jors.148</uri>
+      <pub-id pub-id-type="doi">10.5334/jors.148</pub-id>
+    </element-citation>
+  </ref>
+  <ref id="ref-FAOSTAT">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>FAO</surname></name>
+      </person-group>
+      <article-title>FAO. FAOSTAT. License: CC BY-NC-SA 3.0 IGO. Extracted from: Https://www.fao.org/faostat/en/#data/FBS. Date of access: 22-06-2023</article-title>
+      <year iso-8601-date="2022">2022</year>
+    </element-citation>
+  </ref>
+  <ref id="ref-CEH">
+    <element-citation>
+      <person-group person-group-type="author">
+        <name><surname>Morton</surname><given-names>C. G.;O’Neil</given-names><suffix>R. D.;Marston</suffix></name>
+      </person-group>
+      <article-title>Land cover map 2020 (1km summary rasters, GB and n. ireland)</article-title>
+      <publisher-name>NERC EDS Environmental Information Data Centre</publisher-name>
+      <year iso-8601-date="2022">2022</year>
+      <uri>https://doi.org/10.5285/d6f8c045-521b-476e-b0d6-b3b97715c138</uri>
+      <pub-id pub-id-type="doi">10.5285/d6f8c045-521b-476e-b0d6-b3b97715c138</pub-id>
+    </element-citation>
+  </ref>
+  <ref id="ref-UN">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Nations&quot;</surname></name>
+      </person-group>
+      <article-title>United nations, department of economic and social affairs, population division (2022). World population prospects 2022: Summary of results. UN DESA/POP/2022/TR/NO. 3.</article-title>
+      <year iso-8601-date="2022">2022</year>
+    </element-citation>
+  </ref>
+  <ref id="ref-geopandas">
+    <element-citation publication-type="software">
+      <person-group person-group-type="author">
+        <name><surname>Jordahl</surname><given-names>Kelsey</given-names></name>
+        <name><surname>Bossche</surname><given-names>Joris Van den</given-names></name>
+        <name><surname>Fleischmann</surname><given-names>Martin</given-names></name>
+        <name><surname>Wasserman</surname><given-names>Jacob</given-names></name>
+        <name><surname>McBride</surname><given-names>James</given-names></name>
+        <name><surname>Gerard</surname><given-names>Jeffrey</given-names></name>
+        <name><surname>Tratner</surname><given-names>Jeff</given-names></name>
+        <name><surname>Perry</surname><given-names>Matthew</given-names></name>
+        <name><surname>Badaracco</surname><given-names>Adrian Garcia</given-names></name>
+        <name><surname>Farmer</surname><given-names>Carson</given-names></name>
+        <name><surname>Hjelle</surname><given-names>Geir Arne</given-names></name>
+        <name><surname>Snow</surname><given-names>Alan D.</given-names></name>
+        <name><surname>Cochran</surname><given-names>Micah</given-names></name>
+        <name><surname>Gillies</surname><given-names>Sean</given-names></name>
+        <name><surname>Culbertson</surname><given-names>Lucas</given-names></name>
+        <name><surname>Bartos</surname><given-names>Matt</given-names></name>
+        <name><surname>Eubank</surname><given-names>Nick</given-names></name>
+        <name><surname>maxalbert</surname></name>
+        <name><surname>Bilogur</surname><given-names>Aleksey</given-names></name>
+        <name><surname>Rey</surname><given-names>Sergio</given-names></name>
+        <name><surname>Ren</surname><given-names>Christopher</given-names></name>
+        <name><surname>Arribas-Bel</surname><given-names>Dani</given-names></name>
+        <name><surname>Wasser</surname><given-names>Leah</given-names></name>
+        <name><surname>Wolf</surname><given-names>Levi John</given-names></name>
+        <name><surname>Journois</surname><given-names>Martin</given-names></name>
+        <name><surname>Wilson</surname><given-names>Joshua</given-names></name>
+        <name><surname>Greenhall</surname><given-names>Adam</given-names></name>
+        <name><surname>Holdgraf</surname><given-names>Chris</given-names></name>
+        <name><surname>Filipe</surname></name>
+        <name><surname>Leblanc</surname><given-names>François</given-names></name>
+      </person-group>
+      <article-title>Geopandas/geopandas: v0.8.1</article-title>
+      <publisher-name>Zenodo</publisher-name>
+      <year iso-8601-date="2020-07">2020</year><month>07</month>
+      <uri>https://doi.org/10.5281/zenodo.3946761</uri>
+      <pub-id pub-id-type="doi">10.5281/zenodo.3946761</pub-id>
+    </element-citation>
+  </ref>
+  <ref id="ref-rasterio">
+    <element-citation publication-type="software">
+      <person-group person-group-type="author">
+        <name><surname>Gillies</surname><given-names>Sean</given-names></name>
+        <name><surname>others</surname></name>
+      </person-group>
+      <article-title>Rasterio: Geospatial raster i/o for Python programmers</article-title>
+      <publisher-name>Mapbox</publisher-name>
+      <uri>https://github.com/rasterio/rasterio</uri>
+    </element-citation>
+  </ref>
+  <ref id="ref-fair">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Leach</surname><given-names>N. J.</given-names></name>
+        <name><surname>Jenkins</surname><given-names>S.</given-names></name>
+        <name><surname>Nicholls</surname><given-names>Z.</given-names></name>
+        <name><surname>Smith</surname><given-names>C. J.</given-names></name>
+        <name><surname>Lynch</surname><given-names>J.</given-names></name>
+        <name><surname>Cain</surname><given-names>M.</given-names></name>
+        <name><surname>Walsh</surname><given-names>T.</given-names></name>
+        <name><surname>Wu</surname><given-names>B.</given-names></name>
+        <name><surname>Tsutsui</surname><given-names>J.</given-names></name>
+        <name><surname>Allen</surname><given-names>M. R.</given-names></name>
+      </person-group>
+      <article-title>FaIRv2.0.0: A generalized impulse response model for climate uncertainty and future scenario exploration</article-title>
+      <source>Geoscientific Model Development</source>
+      <year iso-8601-date="2021">2021</year>
+      <volume>14</volume>
+      <issue>5</issue>
+      <uri>https://gmd.copernicus.org/articles/14/3007/2021/</uri>
+      <pub-id pub-id-type="doi">10.5194/gmd-14-3007-2021</pub-id>
+      <fpage>3007</fpage>
+      <lpage>3036</lpage>
+    </element-citation>
+  </ref>
+  <ref id="ref-APSIM">
+    <element-citation publication-type="article-journal">
+      <person-group person-group-type="author">
+        <name><surname>Holzworth</surname><given-names>Dean P.</given-names></name>
+        <name><surname>Huth</surname><given-names>Neil I.</given-names></name>
+        <name><surname>deVoil</surname><given-names>Peter G.</given-names></name>
+        <name><surname>Zurcher</surname><given-names>Eric J.</given-names></name>
+        <name><surname>Herrmann</surname><given-names>Neville I.</given-names></name>
+        <name><surname>McLean</surname><given-names>Greg</given-names></name>
+        <name><surname>Chenu</surname><given-names>Karine</given-names></name>
+        <name><surname>van Oosterom</surname><given-names>Erik J.</given-names></name>
+        <name><surname>Snow</surname><given-names>Val</given-names></name>
+        <name><surname>Murphy</surname><given-names>Chris</given-names></name>
+        <name><surname>Moore</surname><given-names>Andrew D.</given-names></name>
+        <name><surname>Brown</surname><given-names>Hamish</given-names></name>
+        <name><surname>Whish</surname><given-names>Jeremy P. M.</given-names></name>
+        <name><surname>Verrall</surname><given-names>Shaun</given-names></name>
+        <name><surname>Fainges</surname><given-names>Justin</given-names></name>
+        <name><surname>Bell</surname><given-names>Lindsay W.</given-names></name>
+        <name><surname>Peake</surname><given-names>Allan S.</given-names></name>
+        <name><surname>Poulton</surname><given-names>Perry L.</given-names></name>
+        <name><surname>Hochman</surname><given-names>Zvi</given-names></name>
+        <name><surname>Thorburn</surname><given-names>Peter J.</given-names></name>
+        <name><surname>Gaydon</surname><given-names>Donald S.</given-names></name>
+        <name><surname>Dalgliesh</surname><given-names>Neal P.</given-names></name>
+        <name><surname>Rodriguez</surname><given-names>Daniel</given-names></name>
+        <name><surname>Cox</surname><given-names>Howard</given-names></name>
+        <name><surname>Chapman</surname><given-names>Scott</given-names></name>
+        <name><surname>Doherty</surname><given-names>Alastair</given-names></name>
+        <name><surname>Teixeira</surname><given-names>Edmar</given-names></name>
+        <name><surname>Sharp</surname><given-names>Joanna</given-names></name>
+        <name><surname>Cichota</surname><given-names>Rogerio</given-names></name>
+        <name><surname>Vogeler</surname><given-names>Iris</given-names></name>
+        <name><surname>Li</surname><given-names>Frank Y.</given-names></name>
+        <name><surname>Wang</surname><given-names>Enli</given-names></name>
+        <name><surname>Hammer</surname><given-names>Graeme L.</given-names></name>
+        <name><surname>Robertson</surname><given-names>Michael J.</given-names></name>
+        <name><surname>Dimes</surname><given-names>John P.</given-names></name>
+        <name><surname>Whitbread</surname><given-names>Anthony M.</given-names></name>
+        <name><surname>Hunt</surname><given-names>James</given-names></name>
+        <name><surname>van Rees</surname><given-names>Harm</given-names></name>
+        <name><surname>McClelland</surname><given-names>Tim</given-names></name>
+        <name><surname>Carberry</surname><given-names>Peter S.</given-names></name>
+        <name><surname>Hargreaves</surname><given-names>John N. G.</given-names></name>
+        <name><surname>MacLeod</surname><given-names>Neil</given-names></name>
+        <name><surname>McDonald</surname><given-names>Cam</given-names></name>
+        <name><surname>Harsdorf</surname><given-names>Justin</given-names></name>
+        <name><surname>Wedgwood</surname><given-names>Sara</given-names></name>
+        <name><surname>Keating</surname><given-names>Brian A.</given-names></name>
+      </person-group>
+      <article-title>APSIM – evolution towards a new generation of agricultural systems simulation</article-title>
+      <source>Environmental Modelling &amp; Software</source>
+      <year iso-8601-date="2014">2014</year>
+      <volume>62</volume>
+      <issn>1364-8152</issn>
+      <uri>https://www.sciencedirect.com/science/article/pii/S1364815214002102</uri>
+      <pub-id pub-id-type="doi">https://doi.org/10.1016/j.envsoft.2014.07.009</pub-id>
+      <fpage>327</fpage>
+      <lpage>350</lpage>
+    </element-citation>
+  </ref>
+</ref-list>
+</back>
+</article>
