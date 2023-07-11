@@ -9,9 +9,27 @@ from itertools import product
 
 data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
 
-resolutions = [100, 200, 500, 1000, 2000]
-datasets = ["CEH", "ALC"]
-arrays = [f"{d}_{r}" for d, r in product(datasets, resolutions)]
+available = [
+    "ALC_ALC_1000",
+    "ALC_ALC_2000",
+    "ALC_ALC_5000",
+    "CEH_LC_1000",
+    "CEH_LCPCP_1000",
+    "CEH_LCPCP_2000",
+    "CEH_LCPCP_5000",
+]
+
+def __getattr__(name):
+    if name not in available:
+        raise AttributeError(f"{name!r} does not match a dataset and resoliution in {__name__!r}.")
+
+    origin, dataset, resolution = name.split('_')
+    _data_file = f'{data_dir}{origin}/{dataset}_{resolution}.nc'
+    
+    data = xr.open_dataset(_data_file)
+
+    return data
+
 
 @xr.register_dataarray_accessor("land")
 class LandDataArray:
@@ -120,13 +138,3 @@ class LandDataset:
     
         if "x" not in obj.dims or "y" not in obj.dims:
             raise AttributeError("Land array must have 'x' and 'y' dimensions")
-
-def __getattr__(name):
-    if name not in arrays:
-        raise AttributeError(f"{name!r} does not match a dataset and resoliution in {__name__!r}.")
-
-    dataset, resolution = name.split('_')
-    _data_file = f'{data_dir}{dataset}/{name}.nc'
-    data = xr.open_dataset(_data_file)
-
-    return data

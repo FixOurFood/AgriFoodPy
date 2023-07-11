@@ -129,18 +129,18 @@ class FoodBalanceSheet:
         if not isinstance(obj, xr.Dataset):
             raise TypeError("Food Balance Sheet must be an xarray.DataSet")
 
-        required_data_arrays = ["production", "imports", "exports", "food"]
-        missing_data_arrays = []
+        # required_data_arrays = ["production", "imports", "exports", "food"]
+        # missing_data_arrays = []
 
-        for data_array_name in required_data_arrays:
-            if data_array_name not in obj.data_vars:
-                missing_data_arrays.append(data_array_name)
+        # for data_array_name in required_data_arrays:
+        #     if data_array_name not in obj.data_vars:
+        #         missing_data_arrays.append(data_array_name)
 
-        if missing_data_arrays:
-            raise AttributeError(f"Missing data arrays: {missing_data_arrays}")
+        # if missing_data_arrays:
+        #     raise AttributeError(f"Missing data arrays: {missing_data_arrays}")
 
 
-    def add_items(self, items, copy_from=None, labels=None):
+    def add_items(self, items, copy_from=None):
         """Extends the item list of a food balance sheet according to the
         defined input item list
 
@@ -153,9 +153,6 @@ class FoodBalanceSheet:
         copy_from : list, int, string, optional
             If provided, this is the list of items already on the food balance
             sheet to copy data from.
-        labels : dict 
-            Dictionary containing the new label for the items matched to its
-            corresponding label coordinate.
         
         Returns
         -------
@@ -165,7 +162,9 @@ class FoodBalanceSheet:
 
         fbs = self._obj
 
-        items = np.unique(items)
+        # Check for duplicates
+        indexes = np.unique(items, return_index=True)[1]
+        items = [items[index] for index in sorted(indexes)] # using np.unique causes problems
         
         new_items = xr.DataArray(data = np.ones(len(items)),
                                 coords = {"Item":items})
@@ -178,10 +177,6 @@ class FoodBalanceSheet:
         else:
             new_items *= np.nan
             new_fbs = fbs.isel(Item=0)*new_items
-            
-            if labels is not None:
-                for key, item in labels.items():
-                    new_fbs[key] = item
             
         # Concatenate to input array
         concat_fbs = xr.concat([fbs, new_fbs], dim="Item") 
@@ -212,10 +207,11 @@ class FoodBalanceSheet:
 
         fbs = self._obj
 
-        years = np.unique(years)
+        indexes = np.unique(years, return_index=True)[1]
+        years = [years[index] for index in sorted(indexes)]
         
         if projection == "empty":
-            data = np.zeros(len(years))
+            data = np.zeros(len(years))*np.nan
         elif projection == "constant":
             data = np.ones(len(years))
         else:
@@ -235,7 +231,7 @@ class FoodBalanceSheet:
             
         return concat_fbs
 
-    def add_regions(self, regions, copy_from=None, labels=None):
+    def add_regions(self, regions, copy_from=None):
         """Extends the region list of a food balance sheet according to the defined
         input region list
 
@@ -260,7 +256,8 @@ class FoodBalanceSheet:
         
         fbs = self._obj
 
-        regions = np.unique(regions)
+        indexes = np.unique(regions, return_index=True)[1]
+        regions = [regions[index] for index in sorted(indexes)]
         
         new_regions = xr.DataArray(data = np.ones(len(regions)),
                                 coords = {"Region":regions})
@@ -273,10 +270,6 @@ class FoodBalanceSheet:
         else:
             new_regions *= np.nan
             new_fbs = fbs.isel(Region=0)*new_regions
-            
-            if labels is not None:
-                for key, item in labels.items():
-                    new_fbs[key] = item
             
         # Concatenate to input array
         concat_fbs = xr.concat([fbs, new_fbs], dim="Region") 
@@ -352,6 +345,7 @@ class FoodBalanceSheet:
 
         # Scale items
         sel = {"Item":items}
+
         out[element].loc[sel] = out[element].loc[sel] * scale
 
         return out
@@ -543,6 +537,107 @@ class FoodBalanceSheet:
         handles, labels = ax.get_legend_handles_labels()
         by_label = dict(zip(labels, handles))
         ax.legend(by_label.values(), by_label.keys(), fontsize=6)
+
+        return ax
+
+@xr.register_dataarray_accessor("fes")
+class FoodElementSheet:
+    def __init__(self, xarray_obj):
+        self._validate(xarray_obj)
+        self._obj = xarray_obj
+
+    @staticmethod
+    def _validate(obj):
+        """Validate fbs xarray, checking it is a DataArray and has the minimum set
+        of arrays
+        """
+        if not isinstance(obj, xr.DataArray):
+            raise TypeError("Food Balance Sheet must be an xarray.DataSet")
+
+    def plot_years(self, show="Item", ax=None, colors=None, label=None, stack=True,
+               **kwargs):
+        """ Fill plot with quantities at each year value
+
+        Produces a vertical fill plot with quantities for each year on the "Year"
+        coordinate of the input dataset in the horizontal axis. If the "show"
+        coordinate exists, then the vertical fill plot is a stack of the sums of
+        the other coordinates at that year for each item in the "show" coordinate.
+
+        Parameters
+        ----------
+        food : xarray.Dataarray
+            Input Dataarray containing a "Year" coordinate and optionally, a
+
+        show : str, optional
+            Name of the coordinate to dissagregate when filling the vertical
+            plot. The quantities are summed along the remaining coordinates.
+            If the coordinate is not provided or does not exist in the input, all
+            coordinates are summed and a plot with a single fill curve is returned.
+        ax : matplotlib.pyplot.artist, optional
+            Axes on which to draw the plot. If not provided, a new artist is
+            created.
+        colors : list of str, optional
+            String list containing the colors for each of the elements in the "show"
+            coordinate.
+            If not defined, a color list is generated from the standard cycling.
+        label : list of str, optional
+            String list containing the labels for the legend of the elements in the
+            "show" coordinate
+        **kwargs : dict
+            Style options to be passed on to the actual plot function, such as
+            linewidth, alpha, etc.
+
+        Returns
+        -------
+            ax : matplotlib axes instance
+        """
+
+        food = self._obj
+
+        # If no years are found in the dimensions, raise an exception
+        sum_dims = list(food.dims)
+        if "Year" not in sum_dims:
+            raise TypeError("'Year' dimension not found in array data")
+
+        # Define the cumsum and sum dimentions and check for one element dimensions
+        sum_dims.remove("Year")
+        if ax is None:
+            f, ax = plt.subplots(1, **kwargs)
+
+        if show in sum_dims:
+            sum_dims.remove(show)
+            size_cumsum = food.sizes[show]
+            if stack:
+                cumsum = food.cumsum(dim=show).transpose(show, ...)
+            else:
+                cumsum = food
+        else:
+            size_cumsum = 1
+            cumsum = food
+
+        # Collapse remaining dimensions
+        cumsum = cumsum.sum(dim=sum_dims)
+        years = food.Year.values
+
+        # If colors are not defined, generate a list from the standard cycling
+        if colors is None:
+            colors = [f"C{ic}" for ic in range(size_cumsum)]
+
+        # Plot
+        if size_cumsum == 1:
+            ax.fill_between(years, cumsum, color=colors[0], alpha=0.5)
+            ax.plot(years, cumsum, color=colors[0], linewidth=0.5, label=label)
+        else:
+            for id in reversed(range(size_cumsum)):
+                ax.fill_between(years, cumsum[id], color=colors[id], alpha=0.5)
+                ax.plot(years, cumsum[id], color=colors[id], linewidth=0.5,
+                        label=label[id])
+
+        ax.set_xlim(years.min(), years.max())
+        ax.set_ylim(bottom=0)
+
+        if label is not None:
+            ax.legend()
 
         return ax
 

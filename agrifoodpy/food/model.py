@@ -4,8 +4,7 @@
 
 import xarray as xr
 import numpy as np
-from .food_supply import scale_add
-from agrifoodpy.utils.scaling import linear_scale, logistic_scale
+# from .food_supply import FoodBalanceSheet
 import warnings
 
 def balanced_scaling(fbs, element, items, scale, origin="imports", constant=True,
@@ -91,14 +90,14 @@ def balanced_scaling(fbs, element, items, scale, origin="imports", constant=True
         start_year = years[0]
 
     if adoption == "linear":
-        scale_func = linear_scale
+        from agrifoodpy.utils.scaling import linear_scale as scale_func
     else:
-        scale_func = logistic_scale
+        from agrifoodpy.utils.scaling import logistic_scale as scale_func
 
     scale_arr = scale_func(years[0], start_year, start_year+timescale,
                                  years[-1], c_init=1, c_end = scale)
     
-    out = scale_add(out, element, origin.split("-")[-1], scale_arr, items,
+    out = out.fbs.scale_add(element, origin.split("-")[-1], scale_arr, items,
                     add = origin.startswith("-"))
     
     delta = out[element] - fbs[element]
@@ -113,7 +112,7 @@ def balanced_scaling(fbs, element, items, scale, origin="imports", constant=True
                           reduction of non-selected items")
         
         # add = not origin.startswith("-")
-        out = scale_add(out, element, origin.split("-")[-1], non_sel_scale,
+        out = out.fbs.scale_add(element, origin.split("-")[-1], non_sel_scale,
                         non_sel_items, add = origin.startswith("-"))
         
     delta_fallback = out[origin.split("-")[-1]].where(out[origin.split("-")[-1]] < 0).fillna(0)
