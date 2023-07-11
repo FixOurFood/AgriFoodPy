@@ -92,55 +92,71 @@ def impacts(items, regions, quantities, datasets=None, long_format=True):
 
     return data
 
-def match(impact, matching_matrix):
-    """Matches an impact dataset to a new item base using a matching matrix
+@xr.register_dataset_accessor("impact")
+class Impact:
 
-    Parameters
-    ----------
-    impact: xarray.DataSet
-        xarray dataset including a list of items and impacts
-    matching_matrix: pandas dataframe
-        Defines how items are matched from the input to the output datasets,
-        with the values of the matrix indicating the scaling of the
-        impact quantities. Column names indicate the original item list, while
-        row names indicate the new item list
+    def __init__(self, xarray_obj):
+        self._validate(xarray_obj)
+        self._obj = xarray_obj
 
-    Returns
-    -------
-    dataset_out : xarray.Dataset
-        FAOSTAT formatted Food Supply dataset with scaled quantities.
+    @staticmethod
+    def _validate(obj):
+        """Check that the Impact object is an xarray.DataArray or xarray.Dataset
+        """
+        if not isinstance(obj, xr.Dataset):
+            raise TypeError("Food Balance Sheet must be an xarray.DataSet")
 
-    """
+    def match(self, matching_matrix):
+        """Matches an impact dataset to a new item base using a matching matrix
 
-    out_items = matching_matrix["Item Code"]
+        Parameters
+        ----------
+        impact: xarray.DataSet
+            xarray dataset including a list of items and impacts
+        matching_matrix: pandas dataframe
+            Defines how items are matched from the input to the output datasets,
+            with the values of the matrix indicating the scaling of the
+            impact quantities. Column names indicate the original item list, while
+            row names indicate the new item list
 
-    in_items = impact.Item.values
+        Returns
+        -------
+        dataset_out : xarray.Dataset
+            FAOSTAT formatted Food Supply dataset with scaled quantities.
 
-    # First column is the item code column
-    in_items_mat = matching_matrix.columns[1:]
+        """
 
-    assert np.equal(in_items, in_items_mat).all() , "Input items do not match assignment matrix"
+        impact = self._obj
 
-    # Again, we avoid first column
-    mat = matching_matrix.iloc[:, 1:].fillna(0).to_numpy()
+        out_items = matching_matrix["Item Code"]
 
-    dataset_out = xr.Dataset(
-        coords = dict(
-            Item=("Item", out_items),
+        in_items = impact.Item.values
+
+        # First column is the item code column
+        in_items_mat = matching_matrix.columns[1:]
+
+        assert np.equal(in_items, in_items_mat).all() , "Input items do not match assignment matrix"
+
+        # Again, we avoid first column
+        mat = matching_matrix.iloc[:, 1:].fillna(0).to_numpy()
+
+        dataset_out = xr.Dataset(
+            coords = dict(
+                Item=("Item", out_items),
+            )
         )
-    )
 
-    for var in list(impact.keys()):
-        data_out = np.matmul(mat, impact[var].values)
-        dataset_out = dataset_out.assign({var:("Item", data_out)})
+        for var in list(impact.keys()):
+            data_out = np.matmul(mat, impact[var].values)
+            dataset_out = dataset_out.assign({var:("Item", data_out)})
 
-    return dataset_out
+        return dataset_out
 
-def __getattr__(name):
-    if name not in available:
-        raise AttributeError(f"module {__name__!r} has no attribute {name!r}.")
+    def __getattr__(name):
+        if name not in available:
+            raise AttributeError(f"module {__name__!r} has no attribute {name!r}.")
 
-    _data_file = f'{data_dir}{name}.nc'
-    data = xr.open_dataset(_data_file)
+        _data_file = f'{data_dir}{name}.nc'
+        data = xr.open_dataset(_data_file)
 
-    return data
+        return data

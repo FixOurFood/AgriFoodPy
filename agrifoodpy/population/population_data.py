@@ -5,8 +5,6 @@ import numpy as np
 import os
 import xarray as xr
 
-from ..utils.list_tools import tolist
-
 data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
 available = ['UN']
 
