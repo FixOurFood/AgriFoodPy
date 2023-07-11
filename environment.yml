@@ -13,5 +13,6 @@ dependencies:
   - ipython
   - pandas
   - matplotlib
+  - pytest
   - pip:
     - fair
