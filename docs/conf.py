@@ -29,4 +29,4 @@ html_static_path = ['_static']
 # -- Options for AutoAPI -----------------------------------------------------
 autoapi_dirs = ['../agrifoodpy']
 autoapi_options = [ 'members', 'undoc-members', 'show-inheritance', 'show-module-summary', 'special-members', 'imported-members', ]
-# autoapi_ignore = ['*test*','*migrations*']
+autoapi_ignore = ['*/test_*','*migrations*']
