@@ -1,5 +1,4 @@
-""" Module for food intervention models
-
+""" Module for food intervention models and interfaces with external packages
 """
 
 import xarray as xr
@@ -7,9 +6,9 @@ import numpy as np
 # from .food_supply import FoodBalanceSheet
 import warnings
 
-def balanced_scaling(fbs, element, items, scale, origin="imports", constant=True,
-                      fallback="exports", adoption="logistic", timescale=10,
-                      start_year=None):
+def balanced_scaling(fbs, element, items, scale, origin="imports",
+                     constant=True, fallback="exports", adoption="logistic",
+                     timescale=10, start_year=None):
     """ Scale the consumption of selected items.
     
     Scales consumption on a food balance sheet. The speed at which the adoption
@@ -97,28 +96,36 @@ def balanced_scaling(fbs, element, items, scale, origin="imports", constant=True
     scale_arr = scale_func(years[0], start_year, start_year+timescale,
                                  years[-1], c_init=1, c_end = scale)
     
-    out = out.fbs.scale_add(element, origin.split("-")[-1], scale_arr, items,
-                    add = origin.startswith("-"))
+    osplit = origin.split("-")[-1]
+    
+    out = out.fbs.scale_add(element, osplit, scale_arr, items, 
+                            add = origin.startswith("-"))
     
     delta = out[element] - fbs[element]
-
+    
+    
+    
     if constant:
         # non selected items
         non_sel_items = np.setdiff1d(fbs.Item.values, items)
-        non_sel_scale = (fbs.sel(Item=non_sel_items)["food"].sum(dim="Item") - delta.sum(dim="Item")) / fbs.sel(Item=non_sel_items)["food"]
+        non_sel_scale = (fbs.sel(Item=non_sel_items)["food"].sum(dim="Item") -
+                        delta.sum(dim="Item")) / \
+                        fbs.sel(Item=non_sel_items)["food"]
 
         if np.any(non_sel_scale < 0):
             warnings.warn("Additional consumption cannot be compensated by \
                           reduction of non-selected items")
         
         # add = not origin.startswith("-")
-        out = out.fbs.scale_add(element, origin.split("-")[-1], non_sel_scale,
+        out = out.fbs.scale_add(element, osplit, non_sel_scale,
                         non_sel_items, add = origin.startswith("-"))
-        
-    delta_fallback = out[origin.split("-")[-1]].where(out[origin.split("-")[-1]] < 0).fillna(0)
 
-    out[fallback.split("-")[-1]] -= np.where(fallback.startswith("-"), 1, -1) * delta_fallback
+    
 
-    out[origin.split("-")[-1]] = out[origin.split("-")[-1]].where(out[origin.split("-")[-1]] > 0, 0)
+    df = out[osplit].where(out[osplit] < 0).fillna(0)
+
+    out[fallback.split("-")[-1]] -= np.where(fallback.startswith("-"), 1, -1)*df
+
+    out[osplit] = out[osplit].where(out[osplit] > 0, 0)
 
     return out

@@ -1,1 +1,1 @@
-from . import population_data
+from . import population

@@ -5,10 +5,20 @@
 import xarray as xr
 import numpy as np
 
-def fbs_impacts(fbs, impact):
-    """Computes total impacts from quantities in 
-    
+def fbs_impacts(fbs, impact_element, population=None, sum_dims=None):
+    """Computes total impacts from quantities in a food balance sheet Dataset or
+    food element quantity DataArray, summing over items, regions or years if
+    instructed.
     """
+
+    total_impact = fbs * impact_element
+    if population is not None:
+        total_impact *= population
+
+    if sum_dims is not None:
+        total_impact = total_impact.sum(dim=sum_dims)
+        
+    return total_impact
 
 def fair_interface(emissions):
     """Simple Interface to FaIR, the Finite-amplitude Impulse-Response atmosferic
