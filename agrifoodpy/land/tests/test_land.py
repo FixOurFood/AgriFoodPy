@@ -114,3 +114,48 @@ def test_area_overlap():
 
     assert(np.array_equal(expected_results_nan, result_nan))
     
+def test_category_match():
+
+    data_left = np.tile((np.arange(3, dtype=float)), (4,1))
+    data_right = np.repeat((np.arange(4, dtype=float)), 3).reshape((4,3))
+
+    name_left, name_right = "land_left", "land_right"
+
+    da_left = xr.DataArray(data=data_left, name=name_left,
+                    coords={"x": [0, 1, 2, 3], "y": [0, 1, 2]})
+    
+    da_right = xr.DataArray(data=data_right, name=name_right,
+                    coords={"x": [0, 1, 2, 3], "y": [0, 1, 2]})
+
+    land_left = LandDataArray(da_left)
+    land_right = LandDataArray(da_right)
+
+    # Basic example without set values
+    result_basic = land_left.category_match(da_right)
+    assert result_basic.equals(da_left)
+    assert result_basic.name == name_left
+
+    # Example with values on left map
+    result_values_left = land_left.category_match(da_right, values_left=1)
+    assert result_values_left.where(result_values_left==1).equals(da_left.where(da_left==1))
+    assert np.all(result_values_left.where(result_values_left!=1).isnull())
+
+    # Example with values on right map
+    result_values_left = land_left.category_match(da_right, values_right=1)
+    
+    # Example with multiple values on both maps
+    result_multivar = land_left.category_match(da_right,
+                                               values_left=[0,1],
+                                               values_right=[1,2])
+
+    non_nan_values = result_multivar.where(~np.isnan(result_multivar),
+                                           drop=True)
+    truth = np.array([[0., 1.], [0., 1.]])
+    assert np.array_equal(non_nan_values, truth)
+    assert np.array_equal(non_nan_values.x.values, [1, 2])
+    assert np.array_equal(non_nan_values.y.values, [0, 1])
+    assert result_multivar.name == name_left
+
+    # Example with non-matching values
+    result_non_matching = land_left.category_match(da_right, values_left=4)
+    assert np.all(result_non_matching.isnull())

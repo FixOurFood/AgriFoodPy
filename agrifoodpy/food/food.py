@@ -162,7 +162,7 @@ class FoodBalanceSheet:
         
         Returns
         -------
-        fbs : xarray.Dataset, xarray.DataArray 
+        fbs : xarray.Dataset
             FAOSTAT formatted Food Supply dataset with new items added.
         """
 
@@ -364,15 +364,17 @@ class FoodBalanceSheet:
         Parameters
         ----------
         fbs : xarray.Dataset
-
-        scale : float, float array_like or xarray.Dataarray
-            Scaling quantities for the element DataArray
+            Input DataSet with FAOSTAT like elements
         element_in : str
             Element DataArray to be scaled
         element_out : str
             Destination element DataArray to which the difference is added to
+        scale : float, float array_like or xarray.Dataarray
+            Scaling quantities for the element DataArray
         items : list of int or list of str, optional
             List of items to be scaled. If not provided, all items are scaled.
+        add : boolean
+            Wether to add or subtract the difference to element_out 
             
         Returns
         -------
@@ -390,7 +392,8 @@ class FoodBalanceSheet:
         
         return out
 
-    def SSR(self, items=None, per_item=False):
+    def SSR(self, items=None, per_item=False, production="production",
+            imports="imports", exports="exports"):
         """Self-sufficiency ratio
 
         Self-sufficiency ratio (SSR) or ratios for a list of item imports,
@@ -406,6 +409,12 @@ class FoodBalanceSheet:
             list is provided, the SSR is computed for all items.
         per_item : bool, optional
             Whether to return an SSR for each item separately. Default is false
+        production : string, optional
+            Name of the DataArray containing the production data
+        imports : string, optional
+            Name of the DataArray containing the imports data
+        exports : string, optional
+            Name of the DataArray containing the exports data
 
         Returns
         -------
@@ -423,9 +432,9 @@ class FoodBalanceSheet:
             fbs = fbs.sel(Item=items)
 
         if per_item:
-            return fbs["production"] / (fbs["production"] + fbs["imports"] - fbs["exports"])
+            return fbs[production] / (fbs[production] + fbs[imports] - fbs[exports])
 
-        return fbs["production"].sum(dim="Item") / (fbs["production"]+fbs["imports"]-fbs["exports"]).sum(dim="Item")
+        return fbs[production].sum(dim="Item") / (fbs[production]+fbs[imports]-fbs[exports]).sum(dim="Item")
 
     def IDR(self, items=None, per_item=False):
         """Import-dependency ratio
@@ -616,6 +625,18 @@ class FoodElementSheet:
         """
         if not isinstance(obj, xr.DataArray):
             raise TypeError("Food Balance Sheet must be an xarray.DataSet")
+        
+    def add_regions(self, regions, copy_from=None):
+        # use same function as fbs?
+        pass
+
+    def add_years(self, years, projection="empty"):
+        # use same function as fbs?
+        pass
+
+    def add_items(self, items, copy_from=None):
+        # use same function as fbs?
+        pass
 
     def plot_years(self, show="Item", ax=None, colors=None, labels=None,
                    stack=True, **kwargs):

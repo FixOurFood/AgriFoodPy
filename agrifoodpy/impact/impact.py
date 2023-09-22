@@ -5,9 +5,6 @@ import numpy as np
 import xarray as xr
 import os
 
-data_dir = os.path.join(os.path.dirname(__file__), 'data/' )
-available = ['PN18', 'PN18_FAOSTAT']
-
 def impacts(items, regions, quantities, datasets=None, long_format=True):
     """Impact style dataset constructor
 
@@ -151,12 +148,3 @@ class Impact:
             dataset_out = dataset_out.assign({var:("Item", data_out)})
 
         return dataset_out
-
-    def __getattr__(name):
-        if name not in available:
-            raise AttributeError(f"module {__name__!r} has no attribute {name!r}.")
-
-        _data_file = f'{data_dir}{name}.nc'
-        data = xr.open_dataset(_data_file)
-
-        return data

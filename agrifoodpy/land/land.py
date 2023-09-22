@@ -46,11 +46,17 @@ class LandDataArray:
             f, ax = plt.subplots()
 
         # Get plot ranges
+
+        dx_low = (map.x.values[1] - map.x.values[0])/2
+        dx_high = (map.x.values[-1] - map.x.values[-2])/2
+        dy_low = (map.y.values[1] - map.y.values[0])/2
+        dy_high = (map.y.values[-1] - map.y.values[-2])/2
+
         xmin, xmax = map.x.values[[0, -1]]
         ymin, ymax = map.y.values[[0, -1]]
 
         ax.imshow(map, interpolation="none", origin="lower",
-                  extent=[xmin, xmax, ymin, ymax])
+                  extent=[ymin-dy_low, ymax+dy_high, xmin-dx_low, xmax+dx_high])
         
         return ax
         
@@ -167,8 +173,8 @@ class LandDataArray:
     def category_match(self, map_right, values_left=None, values_right=None,
                        join="left"):
         """Returns a land Dataarray with values where a selected overlap occurs
-        between categories from two maps.
-        Values are retained from the left map.
+        between categories from two maps. This returns the values from the left
+        map where coincidence occurs between the left and right map.
 
         Parameters
         ----------
@@ -189,11 +195,25 @@ class LandDataArray:
         """
         map_left = self._obj
 
+        # Check input values
+        if values_left is None:
+            values_left = np.unique(map_left)
+        else:
+            values_left = np.array(values_left)
+
+        if values_right is None:
+            values_right = np.unique(map_right)
+        else:
+            values_right = np.array(values_right)
+
         # Align maps to the left so they have the same dimensions
         map_left, map_right = xr.align(map_left, map_right, join=join)
 
         shape = map_left.shape
 
-        category_match = map_left.where(np.in1d(map_left, values_left).reshape(shape)).where(np.in1d(map_right, values_right).reshape(shape))
+        left_match = np.in1d(map_left, values_left).reshape(shape)
+        right_match = np.in1d(map_right, values_right).reshape(shape)
+
+        category_match = map_left.where(left_match).where(right_match)
 
         return category_match

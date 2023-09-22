@@ -112,7 +112,7 @@ def test_add_regions():
     assert np.array_equal(result_copy_multiple["Region"], expected_regions)
     assert np.array_equal(result_copy_multiple["data"].sel(Region=new_regions), ds.data.sel(Region=[1, 2, 3]))
 
-def test_SRR():
+def test_SSR():
 
     items = ["Beef", "Apples"]
     years = [2020, 2021]
@@ -168,8 +168,8 @@ def test_IDR():
     )
 
     fbs = FoodBalanceSheet(ds)
-    # Test basic result on all items
 
+    # Test basic result on all items
     result_basic = fbs.IDR()
     ex_result_basic = xr.DataArray([0.24, 0.37837838], dims=("Year"),
                                    coords={"Year": years})
@@ -195,9 +195,102 @@ def test_FoodSupply():
     pass
 
 def test_scale_add():
-    pass
 
-def scale_element():
+    items = ["Beef", "Apples"]
+    years = [2020, 2021]
+
+    scalar_scale = 1.5
+    array_scale = np.arange(4).reshape((2,2))
+
+    xarray_year_scale = xr.DataArray([1, 1.5], coords={'Year': years}, dims=['Year'])
+    xarray_item_scale = xr.DataArray([1, 1.5], coords={'Item': items}, dims=['Item'])
+
+    elin = "production"
+    elout = "imports"
+
+    im_data = np.array([[10, 20], [30, 40]])
+    ex_data = np.array([[5, 10], [15, 20]])
+    pr_data= np.array([[50, 60], [70, 80]])
+
+    ds = xr.Dataset(
+        data_vars=dict(
+            imports=(["Year", "Item"], im_data),
+            exports=(["Year", "Item"], ex_data),
+            production=(["Year", "Item"], pr_data)
+            ),
+
+    coords=dict(Item=("Item", items), Year=("Year", years))
+    )
+
+    fbs = FoodBalanceSheet(ds)
+
+    fbs._obj
+
+    # Test with float scale on all items
+    result_scalar = fbs.scale_add(elin, elout, scalar_scale)
+    assert np.array_equal(result_scalar[elin], ds[elin]*scalar_scale)
+    assert np.array_equal(result_scalar[elout], ds[elout] +
+                          (result_scalar[elin] - ds[elin]))
+
+    # Test with float scale on all items with subtraction 
+    result_scalar_sub = fbs.scale_add(elin, elout, scalar_scale, add=False)
+    assert np.array_equal(result_scalar_sub[elin], ds[elin]*scalar_scale)
+    assert np.array_equal(result_scalar_sub[elout], ds[elout] -
+                          (result_scalar_sub[elin] - ds[elin]))
+
+    # Test with float scale on some items
+    result_scalar_item = fbs.scale_add(elin, elout, scalar_scale, items="Beef")
+    assert np.array_equal(result_scalar_item[elin].sel(Item="Beef"),
+                          ds[elin].sel(Item="Beef")*scalar_scale)
+    
+    assert np.array_equal(result_scalar_item[elout].sel(Item="Beef"),
+                          ds[elout].sel(Item="Beef") + 
+                          (result_scalar_item[elin].sel(Item="Beef")
+                           - ds[elin].sel(Item="Beef")))
+    
+    assert np.array_equal(result_scalar_item[elin].sel(Item="Apples"),
+                          ds[elin].sel(Item="Apples"))
+    
+    assert np.array_equal(result_scalar_item[elout].sel(Item="Apples"),
+                          ds[elout].sel(Item="Apples"))
+
+    # Test with float scale on some items with subtraction
+    result_scalar_item_sub = fbs.scale_add(elin, elout, scalar_scale,
+                                           items="Beef", add=False)
+    
+    assert np.array_equal(result_scalar_item_sub[elin].sel(Item="Beef"),
+                          ds[elin].sel(Item="Beef")*scalar_scale)
+    
+    assert np.array_equal(result_scalar_item_sub[elout].sel(Item="Beef"),
+                          ds[elout].sel(Item="Beef") -
+                          (result_scalar_item_sub[elin].sel(Item="Beef")
+                           - ds[elin].sel(Item="Beef")))
+    
+    assert np.array_equal(result_scalar_item_sub[elin].sel(Item="Apples"),
+                          ds[elin].sel(Item="Apples"))
+    
+    assert np.array_equal(result_scalar_item_sub[elout].sel(Item="Apples"),
+                          ds[elout].sel(Item="Apples"))
+
+    # Test with array scale on all items
+    result_array = fbs.scale_add(elin, elout, array_scale)
+    assert np.array_equal(result_array[elin], ds[elin]*array_scale)
+    assert np.array_equal(result_array[elout], ds[elout] + (result_array[elin]
+                                                            - ds[elin]))
+
+    # Test with DataArray scale on years only
+    result_xarray_year = fbs.scale_add(elin, elout, xarray_year_scale)
+    assert np.array_equal(result_xarray_year[elin], ds[elin]*xarray_year_scale)
+    assert np.array_equal(result_xarray_year[elout], ds[elout]
+                          + (result_xarray_year[elin] - ds[elin]))
+
+    # Test with DataArray scale on items only
+    result_xarray_item = fbs.scale_add(elin, elout, xarray_item_scale)
+    assert np.array_equal(result_xarray_item[elin], ds[elin]*xarray_item_scale)
+    assert np.array_equal(result_xarray_item[elout], ds[elout]
+                          + (result_xarray_item[elin] - ds[elin]))
+
+def test_scale_element():
     
     items = ["Beef", "Apples"]
     years = [2020, 2021]
