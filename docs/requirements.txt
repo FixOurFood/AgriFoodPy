@@ -1,3 +1,3 @@
 sphinx-autoapi
-myst_nb
 sphinx_rtd_theme
+myst-parser
