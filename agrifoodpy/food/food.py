@@ -12,6 +12,8 @@ import numpy as np
 import xarray as xr
 import copy
 
+from agrifoodpy.array_accessor import _XarrayAccessorBase
+
 import matplotlib.pyplot as plt
 
 def FoodSupply(items, years, quantities, regions=None, elements=None,
