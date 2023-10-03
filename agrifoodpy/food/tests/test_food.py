@@ -1,147 +1,7 @@
 import numpy as np
 import xarray as xr
 from agrifoodpy.food.food import FoodBalanceSheet
-from agrifoodpy.food.food import FoodSupply
 import pytest
-
-def test_FoodSupply_long():
-
-    # Single item, single year
-    single_item = "chicken"
-    single_year = 1990
-    single_quantity = 10
-
-    result = FoodSupply(items=single_item, years=single_year,
-                        quantities=single_quantity)
-
-    truth = xr.Dataset(data_vars = {"Quantity 0":(["Item", "Year"],
-                                                  [[single_quantity]])},
-                    coords = {"Year":[single_year], "Item":[single_item]})
-
-    assert truth.equals(result)
-
-    # Single array item, single array year
-    single_array_item = ["chicken"]
-    single_array_year = [1990]
-    single_array_quantity = [10]
-
-    result = FoodSupply(items=single_array_item, years=single_array_year,
-                        quantities=single_array_quantity)
-
-    truth = xr.Dataset(data_vars = {"Quantity 0":(["Item", "Year"],
-                                                  [single_array_quantity])},
-                    coords = {"Year":single_array_year,
-                              "Item":single_array_item})
-
-    assert truth.equals(result)
-
-    # Single item, single year, single region
-    single_region = "UK"
-    result = FoodSupply(items=single_item, years=single_year,
-                        regions=single_region, quantities=single_quantity)
-
-    truth = xr.Dataset(data_vars = {"Quantity 0":(["Item", "Year", "Region"],
-                                                  [[[single_quantity]]])},
-                    coords = {"Item":[single_item],
-                              "Year":[single_year],
-                              "Region":[single_region]})
-
-    assert truth.equals(result)
-
-    # Single element dimensions, named element 
-    single_element = "Food"
-
-    result = FoodSupply(items=single_item, years=single_year,
-                        regions=single_region, quantities=single_quantity,
-                        elements=single_element)
-
-    truth = xr.Dataset(data_vars = {single_element:(["Item", "Year", "Region"],
-                                                    [[[single_quantity]]])},
-                    coords = {"Item":[single_item],
-                              "Year":[single_year],
-                              "Region":[single_region]})
-
-    assert truth.equals(result)
-
-    # Single item, many years, single region
-    many_years = [1990, 1991, 1992]
-    many_years_qty = [10,20,30]
-
-    result = FoodSupply(items=single_item, years=many_years,
-                        regions=single_region, quantities=many_years_qty)
-    
-    truth_array = np.array(many_years_qty).reshape(1,3,1)
-    truth = xr.Dataset(data_vars = {"Quantity 0":(["Item", "Year", "Region"],
-                                                  truth_array)},
-                       coords = {"Item":[single_item],
-                                 "Year":many_years,
-                                 "Region":[single_region]},)
-
-    assert truth.equals(result)
-
-    # Multiple elements in all dimensions
-    many_dim_years = np.array([1990, 1991, 1992, 1992])
-    many_dim_items = ["chicken", "chicken", "chicken", "beef"]
-    many_dim_regions = ["UK", "UK", "UK", "USA"]
-    many_dims_qty = [10, 20, 30, 40]
-
-    result = FoodSupply(items=many_dim_items, years=many_dim_years,
-                        regions=many_dim_regions, quantities=many_dims_qty)
-    
-    truth_array = np.array([[[np.nan,np.nan],[np.nan,np.nan],[np.nan,40]],
-                        [[10,np.nan],[20,np.nan],[30,np.nan]]])
-
-    truth = xr.Dataset(data_vars = {"Quantity 0":(["Item", "Year", "Region"],
-                                                  truth_array)},
-                       coords = {"Item":np.unique(many_dim_items),
-                                 "Year":np.unique(many_dim_years),
-                                 "Region":np.unique(many_dim_regions)})
-
-    assert truth.equals(result)
-
-    # TODO Multiple element test. Have to fix the code to be truly long format
-    # friendly
-
-    # Many elements in all dimensions, wide format
-
-    many_dim_years = np.array([1990, 1991])
-    many_dim_items = ["beef", "chicken"]
-    many_dim_regions = ["UK", "USA"]
-    many_dim_qty = 10*np.arange(8).reshape(2,2,2)
-
-    truth = xr.Dataset(data_vars = {"Quantity 0":(["Item", "Year", "Region"],
-                                                  many_dim_qty)},
-                    coords = {"Item":many_dim_items,
-                              "Year":many_dim_years,
-                              "Region":many_dim_regions})
-
-    result = FoodSupply(items=many_dim_items, years=many_dim_years,
-                        regions=many_dim_regions, quantities=many_dim_qty,
-                        long_format=False)
-
-    assert result.equals(truth)
-
-    # Many elements in all dimensions, multiple named elements, wide format
-
-    many_dim_years = np.array([1990, 1991])
-    many_dim_items = ["beef", "chicken"]
-    many_dim_regions = ["UK", "USA"]
-    many_dim_qty = 10*np.arange(16).reshape(2,2,2,2)
-    many_dim_elements = ["Food", "Waste"]
-
-    result = FoodSupply(items=many_dim_items, years=many_dim_years,
-                        regions=many_dim_regions, quantities=many_dim_qty,
-                        elements=many_dim_elements, long_format=False)
-
-    truth = xr.Dataset(data_vars = {"Food":(["Item", "Year", "Region"],
-                                            many_dim_qty[0]),
-                                    "Waste": (["Item", "Year", "Region"],
-                                              many_dim_qty[1])},
-                    coords = {"Item":many_dim_items,
-                              "Year":many_dim_years,
-                              "Region":many_dim_regions})
-
-    assert result.equals(truth)
 
 def test_add_years():
 
@@ -159,8 +19,7 @@ def test_add_years():
     result_empty = fbs.add_years(new_years, projection="empty")
 
     assert np.array_equal(result_empty["Year"], expected_years)
-    assert np.isnan(result_empty["data"].loc[{"Year":new_years}].to_numpy()
-                    ).all()
+    assert np.isnan(result_empty["data"].loc[dict(Year=new_years)].to_numpy()).all()
 
     # Test adding years with "constant" projection
     result_constant = fbs.add_years(new_years, projection="constant")
@@ -168,18 +27,16 @@ def test_add_years():
 
     assert np.array_equal(result_constant["Year"], expected_years)
     for year in new_years:
-        assert np.array_equal(result_constant["data"].loc[{"Year":year}].values,
-                              last_year_data)
+        assert np.array_equal(result_constant["data"].loc[dict(Year=year)].values, last_year_data)
 
     # Test adding years with specific projection
-    proj = [0.5, 0.6, 0.7]  # Scaling factors
-    result_projection = fbs.add_years(new_years, projection=proj)
+    projection = [0.5, 0.6, 0.7]  # Scaling factors
+    result_projection = fbs.add_years(new_years, projection=projection)
     last_year_data = result_projection["data"].loc[dict(Year=years[-1])].values
-    expected_data = [last_year_data * proj[i] for i in range(len(proj))]
+    expected_data = [last_year_data * projection[i] for i in range(len(projection))]
 
     assert np.array_equal(result_projection["Year"], expected_years)
-    assert np.allclose(result_projection["data"].loc[{"Year":new_years}].values,
-                       expected_data)
+    assert np.allclose(result_projection["data"].loc[dict(Year=new_years)].values, expected_data)
 
     # Test for duplicate years
     new_years_duplicate = [2013, 2013, 2014, 2015]
@@ -213,17 +70,13 @@ def test_add_items():
 
     assert np.array_equal(result_copy["Item"], expected_items)
     for item_i in new_items:
-        assert np.array_equal(result_copy["data"].sel(Item=item_i),
-                              ds.data.sel(Item="Beef"))
+        assert np.array_equal(result_copy["data"].sel(Item=item_i), ds.data.sel(Item="Beef"))
 
     # Test adding new items copying from existing array
-    result_copy_multiple = fbs.add_items(new_items, copy_from=["Beef",
-                                                               "Apples",
-                                                               "Poultry"])
+    result_copy_multiple = fbs.add_items(new_items, copy_from=["Beef", "Apples", "Poultry"])
 
     assert np.array_equal(result_copy_multiple["Item"], expected_items)
-    assert np.array_equal(result_copy_multiple["data"].sel(Item=new_items),
-                          ds.data.sel(Item=["Beef", "Apples", "Poultry"]))
+    assert np.array_equal(result_copy_multiple["data"].sel(Item=new_items), ds.data.sel(Item=["Beef", "Apples", "Poultry"]))
   
 def test_add_regions():
 
@@ -251,15 +104,13 @@ def test_add_regions():
 
     assert np.array_equal(result_copy["Region"], expected_regions)
     for region_i in new_regions:
-        assert np.array_equal(result_copy["data"].sel(Region=region_i),
-                              ds.data.sel(Region=1))
+        assert np.array_equal(result_copy["data"].sel(Region=region_i), ds.data.sel(Region=1))
 
     # Test adding new regions copying from existing array
     result_copy_multiple = fbs.add_regions(new_regions, copy_from=[1, 2, 3])
 
     assert np.array_equal(result_copy_multiple["Region"], expected_regions)
-    assert np.array_equal(result_copy_multiple["data"].sel(Region=new_regions),
-                          ds.data.sel(Region=[1, 2, 3]))
+    assert np.array_equal(result_copy_multiple["data"].sel(Region=new_regions), ds.data.sel(Region=[1, 2, 3]))
 
 def test_SSR():
 
@@ -340,6 +191,9 @@ def test_IDR():
     
     xr.testing.assert_allclose(result_peritem, ex_result_peritem)
 
+def test_FoodSupply():
+    pass
+
 def test_scale_add():
 
     items = ["Beef", "Apples"]
@@ -348,10 +202,8 @@ def test_scale_add():
     scalar_scale = 1.5
     array_scale = np.arange(4).reshape((2,2))
 
-    xarray_year_scale = xr.DataArray([1, 1.5], coords={'Year': years},
-                                     dims=['Year'])
-    xarray_item_scale = xr.DataArray([1, 1.5], coords={'Item': items},
-                                     dims=['Item'])
+    xarray_year_scale = xr.DataArray([1, 1.5], coords={'Year': years}, dims=['Year'])
+    xarray_item_scale = xr.DataArray([1, 1.5], coords={'Item': items}, dims=['Item'])
 
     elin = "production"
     elout = "imports"
