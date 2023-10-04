@@ -12,7 +12,7 @@ import numpy as np
 import xarray as xr
 import copy
 
-from agrifoodpy.array_accessor import _XarrayAccessorBase
+from agrifoodpy.array_accessor import XarrayAccessorBase
 
 import matplotlib.pyplot as plt
 
@@ -124,7 +124,7 @@ def FoodSupply(items, years, quantities, regions=None, elements=None,
     return fbs
 
 @xr.register_dataset_accessor("fbs")
-class FoodBalanceSheet(_XarrayAccessorBase):
+class FoodBalanceSheet(XarrayAccessorBase):
 
     def scale_element(self, element, scale, items=None):
         """Scales list of items from an element in a food balance sheet like
@@ -427,7 +427,7 @@ class FoodBalanceSheet(_XarrayAccessorBase):
         return ax
 
 @xr.register_dataarray_accessor("fes")
-class FoodElementSheet(_XarrayAccessorBase):
+class FoodElementSheet(XarrayAccessorBase):
         
     def plot_years(self, show="Item", ax=None, colors=None, labels=None,
                    stack=True, **kwargs):

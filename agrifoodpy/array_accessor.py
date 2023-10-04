@@ -1,7 +1,7 @@
 import xarray as xr
 import numpy as np
 
-class _XarrayAccessorBase(object):
+class XarrayAccessorBase(object):
     """Common logic for for both data structures (DataArray and Dataset).
 
     http://xarray.pydata.org/en/stable/internals.html#extending-xarray

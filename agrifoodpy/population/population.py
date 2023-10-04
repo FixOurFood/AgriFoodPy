@@ -4,7 +4,7 @@
 import numpy as np
 import xarray as xr
 
-from agrifoodpy.array_accessor import _XarrayAccessorBase
+from agrifoodpy.array_accessor import XarrayAccessorBase
 
 def population(years, regions, quantities, datasets=None, long_format=True):
     """Population style dataset constructor
@@ -96,5 +96,5 @@ def population(years, regions, quantities, datasets=None, long_format=True):
     return data
 
 @xr.register_dataarray_accessor("pop")
-class PopulationDataArray(_XarrayAccessorBase):
+class PopulationDataArray(XarrayAccessorBase):
     pass
