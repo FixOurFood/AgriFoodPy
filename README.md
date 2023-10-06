@@ -14,6 +14,8 @@ cd AgriFoodPy
 conda env create -f environment.yml
 ```
 
+
+
 - Create a conda environment
 ```
 conda activate agrifoodpy
