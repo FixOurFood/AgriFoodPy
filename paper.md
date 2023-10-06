@@ -165,6 +165,8 @@ allow a holistic approach to agrifood modelling.
 
 # Acknowledgements
 
+We acknowledge the contributions of the FixOurFood collaboration
+
 
 
 # References
