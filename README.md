@@ -26,6 +26,7 @@ pip install agrifoodpy
 
 Currently, you install the package directly from this repository by running:
 
+
 ```bash
 pip install git+https://github.com/FixOurFood/agrifoodpy-data.git
 ```
