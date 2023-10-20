@@ -14,7 +14,7 @@ authors:
     affiliation: 2
 
   - name: Ian Harrison
-    orcid: XXXX-XXXX-XXXX-XXXX
+    orcid: 0000-0002-4437-0770
     affiliation: 3
 
   - name: Sarah L. Bridle
@@ -30,12 +30,16 @@ authors:
     affiliation: 4
 
   - name: Neil Ward
-    orcid: XXXX-XXXX-XXXX-XXXX
+    orcid: 0000-0002-0732-2278
     affiliation: 5
 
   - name: Jez Frendenburgh
     orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 5
+
+  - name: Edward Pope
+    orcid: XXXX-XXXX-XXXX-XXXX
+    affiliation: 2
 
   - name: Alana Kluczkovski
     orcid: XXXX-XXXX-XXXX-XXXX
@@ -50,40 +54,46 @@ authors:
     affiliation: 7
 
   - name: Christian Reynolds
-    orcid: XXXX-XXXX-XXXX-XXXX
+    orcid: 0000-0002-1073-7394
     affiliation: 8
 
   - name: Katherine Denby
-    orcid: XXXX-XXXX-XXXX-XXXX
-    affiliation: 1
+    orcid: 0000-0002-7857-6814
+    affiliation: 9
 
   - name: Bob Doherty
     orcid: XXXX-XXXX-XXXX-XXXX
-    affiliation: 1
+    affiliation: 10
 
   - name: Aled Jones
-    orcid: XXXX-XXXX-XXXX-XXXX
-    affiliation: 9
+    orcid: 0000-0001-7823-9116
+    affiliation: 11
 
 affiliations:
  - name: Department of Environment and Geography Wentworth Way, University of York, Heslington, York, YO10 5NG, UK
    index: 1
- - name:
+ - name: Met Office Hadley Centre, Met Office, Fitz Roy Road, Exeter, Devon, UK
    index: 2
  - name: School of Physics and Astronomy, Cardiff University, Cardiff CF24 3AA, UK
    index: 3
  - name: Centre for Environmental and Agricultural Informatics, School of Water, Energy and Environment, Cranfield University, Cranfield MK43 0AL, UK
    index: 4
- - name: Vice Chancellor's Office, University of East Anglia, Norwich, NR4 7TJ, UK
+ - name: School of Environmental Sciences, University of East Anglia, Norwich, UK
    index: 5
- - name:
+ - name: Equitable Development and Resilience Research Group, College of Engineering, Design and Physical Science, Brunel University London, London, UB8 3PH, UK
    index: 6
- - name:
+ - name: Global Academy of Agriculture and Food Systems, Alexander Robertson Building, Easter Bush Campus, Roslin, Midlothian EH25 9RG
    index: 7
- - name:
+ - name: Centre for Food Policy, City, University of London, Northampton Square, London, EC1V 0HB, UK
    index: 8
+ - name: Centre for Novel Agricultural Products (CNAP), Department of Biology, University of York, York, YO10 5DD, UK
+   index: 9
+ - name: School for Business and Society, University of York
+   index: 10
+ - name: Global Sustainability Institute, Anglia Ruskin University, Cambridge CB1 1PT, UK
+   index: 11
    
-date: July 2023
+date: October 2023
 bibliography: paper.bib
 ---
 
@@ -102,8 +112,12 @@ A separate repository, `agrifoodpy_data`, is also maintained in parallel to
 provide access to local and global agrifood datasets, including geospatial land
 use and classification data [@CEH], food supply [@FAOSTAT], life cycle
 assessment [@PN18], and population data [@UN]. The `AgriFoodPy` framework is
-region-agnostic and will provide facilities to model and simulate processes and
+region-agnostic and provides facilities to model and simulate processes and
 interventions regardless of their geographic origin.
+As an example, current functionality can be used to construct predictions on the
+effect of dietary change on greenhouse emissions, the carbon sequestration of
+transforming agricultural land use, or consequences of modifying farming
+practices on operational costs.  
 
 <!-- Open source development and maintenance -->
 Open-source code and community development will allow a transparent view into
@@ -115,11 +129,14 @@ sustainability and interoperability.
 
 <!-- Current functionality -->
 Version 0.1 provides basic table manipulation methods to extend the coordinate
-dimensions of xarray Datasets and DataArrays, summary statistics and indicators,
-and plotting functions to analyze and display data.
-It also includes a library of intervention models across a range of observables
-and indicators that connect with pre-existing atmospheric, land use change,
-socio-economic, and human health models.
+dimensions of xarray Datasets and DataArrays, extract summary statistics and
+indicators, plotting methods to analyze and display data.
+It also includes a library of intervention models such as diet change,
+afforestation and agroecology and land carbon sequestration.
+We have also built an interface to external an atmospheric model [@fair].
+We plan to extend this library of interfaces to incorporate other open source
+tools, including socioeconomic, land use, environmental, health, and policy
+modelling packages.
 
 <!-- Future functionality -->
 Future releases will provide access to more models and community-contributed
@@ -131,8 +148,8 @@ can be used to speed up the comparison of multiple scenarios.
 
 <!-- Background and main references -->
 Providing food for an ever-growing population while reducing the impact of human
-activity on the environment has become one of the main global
-challenges. Local and intergovernmental independent committees
+activity on the environment has become one of the main global challenges.
+Local and intergovernmental independent committees
 (https://www.theccc.org.uk/, https://www.ipcc.ch/) have reported the importance
 of food production on climate change. The scenarios and projections in their
 reports also highlight the need for precise and transparent modeling of
@@ -143,7 +160,7 @@ effects of consumption patterns and farming practices.
 Coordinated efforts to achieve a sustainable food system must originate from
 effective policy-making based on evidence, careful choice of metrics and
 indicators to describe the state of the food system, and accurate estimates of
-how these metrics change under different scenarios.
+how these metrics change under different scenarios and decisions/interventions.
 
 <!-- Challenges and problematics -->
 Existing datasets and analysis software usually rely on non-standardized data
@@ -168,7 +185,7 @@ other languages, such as agriculture and farming (`APSIM` [@APSIM]) and life
 cycle assestment (`OpenLCA`, www.openlca.org).
 
 <!-- How does this package connect with other packages and projects -->
-AgriFoodPy will provide a consistent standard for agrifood data distribution,
+AgriFoodPy provides a consistent standard for agrifood data distribution,
 while also allowing external models and packages to coexist and interoperate,
 allowing a holistic approach to agrifood modeling.
 
@@ -178,6 +195,6 @@ allowing a holistic approach to agrifood modeling.
 JPC, SLB, AF, MC, KD, BD, AK and FixOurFood’s work was supported by the UKRI
 Transforming Food Systems Strategic Priority Fund (grant number BB/V004581/1).
 This article has benefited from comments and suggestions of the following
-people: Aled Jones, Joe Kennedy, Nada Saidi, Dan Lewis.
+people: Daniel Lewis, Joe Kennedy, Nada Saidi, Adam Amara.
 
 # References
