@@ -368,11 +368,12 @@ class FoodBalanceSheet(XarrayAccessorBase):
         print_labels = True
         if labels is None:
             # empty label placeholder and no-label flag
-            labels = np.empty(len(fbs[show].values))
+            labels = np.empty(len(fbs[show].values), dtype=str)
             print_labels = False
 
         elif np.all(labels == "show"):
-            labels = fbs[show].values
+            labels = [str(val) for val in fbs[show].values]
+
 
         # Plot non inverted elements first
         cumul = 0
@@ -429,7 +430,7 @@ class FoodBalanceSheet(XarrayAccessorBase):
 @xr.register_dataarray_accessor("fes")
 class FoodElementSheet(XarrayAccessorBase):
         
-    def plot_years(self, show="Item", ax=None, colors=None, labels=None,
+    def plot_years(self, show="Year", ax=None, colors=None, labels=None,
                    stack=True, **kwargs):
         """ Fill plot with quantities at each year value
 

@@ -119,3 +119,59 @@ def test_add_regions():
     assert np.array_equal(result_copy_multiple["Region"], expected_regions)
     assert np.array_equal(result_copy_multiple["data"].sel(Region=new_regions),
                           ds.data.sel(Region=[1, 2, 3]))
+    
+def test_group_sum():
+    items = ["Beef", "Apples", "Poultry"]
+    years = np.arange(1990, 1992)
+    regions = ["UK", "US"]
+    item_origin = ["Animal", "Vegetal", "Animal"]
+
+    data = np.arange(12).reshape(3, 2, 2)
+
+    ds = xr.Dataset({"data": (("Item", "Year", "Region"), data)},
+                    coords={"Item": items,
+                            "Year": years,
+                            "Region": regions})
+    # Label dimension
+    ds = ds.assign_coords({"Item_origin":("Item", item_origin)})
+
+    fbs = XarrayAccessorBase(ds)
+
+    # Basic test on non-dimension coordinate
+    sum_dim = "Item_origin"
+    result = fbs.group_sum(sum_dim)
+
+    sum_dim_values = np.unique(item_origin)
+    truth_data = [data[0]+data[2], data[1]]
+    truth = xr.Dataset({"data": ((sum_dim, "Year", "Region"), truth_data)},
+                    coords={"Year": years,
+                            "Region": regions,
+                            sum_dim: sum_dim_values})
+    
+    assert result.equals(truth)
+    
+    # Basic test on non-dimension coordinate, renaming output dimension
+    sum_dim = "Item_origin"
+    out_dim = "Elements"
+    result = fbs.group_sum(sum_dim, new_name=out_dim)
+
+    sum_dim_values = np.unique(item_origin)
+    truth_data = [data[0]+data[2], data[1]]
+    truth = xr.Dataset({"data": ((out_dim, "Year", "Region"), truth_data)},
+                    coords={"Year": years,
+                            "Region": regions,
+                            out_dim: sum_dim_values})
+
+    assert result.equals(truth)
+
+    # Test on named dimension
+    sum_dim = "Item"
+    result = fbs.group_sum(sum_dim)
+
+    truth = xr.Dataset({"data": (("Item", "Year", "Region"), data)},
+                    coords={"Year": years,
+                            "Region": regions,
+                            "Item": items}).sel(Item=np.unique(items))
+
+    assert result.equals(truth)
+    
