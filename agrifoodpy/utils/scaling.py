@@ -33,7 +33,6 @@ def logistic_scale(y0, y1, y2, y3, c_init, c_end):
     # Set values between y1 and y2 using a logistic curve
     var_segment = np.logical_and(years >= y1, years < y2)
     t = (years[var_segment] - y1) / (y2 - y1)
-    print(t)
     values[var_segment] = c_init + \
                           (c_end - c_init) *(1 / (1 + np.exp(-10 * (t - 0.5))))
 

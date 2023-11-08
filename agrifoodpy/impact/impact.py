@@ -3,9 +3,9 @@
 
 import numpy as np
 import xarray as xr
-import os
+from agrifoodpy.array_accessor import XarrayAccessorBase
 
-def impacts(items, regions, quantities, datasets=None, long_format=True):
+def impact(items, regions, quantities, datasets=None, long_format=True):
     """Impact style dataset constructor
 
     Parameters
@@ -90,7 +90,7 @@ def impacts(items, regions, quantities, datasets=None, long_format=True):
     return data
 
 @xr.register_dataset_accessor("impact")
-class Impact:
+class Impact(XarrayAccessorBase):
 
     def __init__(self, xarray_obj):
         self._validate(xarray_obj)
@@ -132,7 +132,8 @@ class Impact:
         # First column is the item code column
         in_items_mat = matching_matrix.columns[1:]
 
-        assert np.equal(in_items, in_items_mat).all() , "Input items do not match assignment matrix"
+        assert np.equal(in_items, in_items_mat).all() , \
+            "Input items do not match assignment matrix"
 
         # Again, we avoid first column
         mat = matching_matrix.iloc[:, 1:].fillna(0).to_numpy()

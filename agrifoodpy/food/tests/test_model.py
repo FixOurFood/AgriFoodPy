@@ -3,5 +3,6 @@ import xarray as xr
 
 import warnings
 
-def test_scale_consumption():
-    pass
+def test_balanced_scaling():
+    
+    from agrifoodpy.food.model import balanced_scaling

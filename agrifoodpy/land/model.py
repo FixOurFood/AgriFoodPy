@@ -61,7 +61,7 @@ def carbon_sequestration(land_da, categories,
         Fully grown silvopasture land carbon sequestration expressed in
         [t CO2e / ha / year]    
     years : int, array
-        Year range length, or array of years for which the sequestratio is
+        Year range length, or array of years for which the sequestration is
         computed. If not given, stationary maximum values are returned 
     growth_timescale : float
         Time in years for land to reach full sequestration potential
@@ -93,12 +93,16 @@ def carbon_sequestration(land_da, categories,
     area_category = pixel_count_category * 100
     
     if years is not None:
-        # and then the sequestration as a function of time    
-        y0 = 0
-        y1 = 0
-        y2 = growth_timescale
-        y3 = years
-        scale = scaling.linear_scale(y0, y1, y2, y3, 0, 1)
+        # single scalar value
+        if np.isscalar(years):
+            scale = scaling.linear_scale(0, 0, growth_timescale, years, 0, 1)
+        # year range
+        else:
+            y0 = np.max((0, np.min(years)))
+            y1 = np.max((0, np.min(years)))
+            y2 = growth_timescale + y1
+            y3 = np.max(years)
+            scale = scaling.linear_scale(y0, y1, y2, y3, 0, 1)
     else:
         scale = 1
     
@@ -126,14 +130,3 @@ def carbon_sequestration(land_da, categories,
     })
     
     return sequestration_dataset
-
-def production_from_land():
-    """Food balance sheet from land use.
-
-    Generates a production sheet dataarray from a land dataarray or dataset
-    describing the land use at any given position and, optionally, a map
-    describing yield per position.
-
-
-
-    """
