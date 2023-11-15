@@ -56,7 +56,7 @@ class LandDataArray:
         ymin, ymax = map.y.values[[0, -1]]
 
         ax.imshow(map, interpolation="none", origin="lower",
-                  extent=[ymin-dy_low, ymax+dy_high, xmin-dx_low, xmax+dx_high])
+                  extent=[xmin-dx_low, xmax+dx_high, ymin-dy_low, ymax+dy_high])
         
         return ax
         
