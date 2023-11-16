@@ -30,3 +30,12 @@ html_theme = "sphinx_rtd_theme"
 autoapi_dirs = ['../agrifoodpy']
 autoapi_options = [ 'members', 'undoc-members', 'show-inheritance', 'show-module-summary', 'special-members', 'imported-members', ]
 autoapi_ignore = ['*/tests*','*migrations*']
+
+# Sphinx Gallery
+extensions += ['sphinx_gallery.gen_gallery', ]
+sphinx_gallery_conf = {
+    'examples_dirs': '../examples',  # path to examples scripts
+    'gallery_dirs': 'examples',      # path to gallery generated examples
+    'run_stale_examples': True,
+    'download_all_examples': False,
+}

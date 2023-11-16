@@ -10,6 +10,11 @@ Welcome to agrifoodpy's documentation!
    :maxdepth: 2
    :caption: Contents:
 
+   install
+   examples/index
+
+   contributing
+
 .. include:: readme.md
    :parser: myst_parser.sphinx_
 
