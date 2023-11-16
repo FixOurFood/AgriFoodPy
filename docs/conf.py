@@ -7,9 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = 'agrifoodpy'
-copyright = '2023, Juan P. Cordero'
+copyright = '2023, AgriFoodPy developers'
 author = 'Juan P. Cordero'
-release = '0.0.1'
+release = '0.1.0'
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
