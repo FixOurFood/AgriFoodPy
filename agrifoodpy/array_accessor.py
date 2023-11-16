@@ -31,10 +31,14 @@ class XarrayAccessorBase(object):
 
         fbs = self._obj
 
+        if np.isscalar(items):
+            items = [items]
+        
         # Check for duplicates
         indexes = np.unique(items, return_index=True)[1]
         items = [items[index] for index in sorted(indexes)] #issues with np.unique
         
+
         new_items = xr.DataArray(data = np.ones(len(items)),
                                 coords = {"Item":items})
 
