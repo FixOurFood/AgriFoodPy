@@ -24,8 +24,7 @@ from agrifoodpy_data.land import UKCEH_LC_1000 as LC, ALC_1000 as ALC
 
 from agrifoodpy.land.land import LandDataArray
 from agrifoodpy.land.model import land_sequestration
-
-from agrifoodpy.food.food import FoodElementSheet
+import agrifoodpy.food
 
 from matplotlib import pyplot as plt
 
@@ -64,7 +63,7 @@ co2e_seq = land_sequestration(land_use, [1,2], max_seq=seq_forest,
                      years = np.arange(2020,2070),
                      growth_timescale=25)
 
-ax = co2e_seq.fes.plot_years()
+ax = co2e_seq.fbs.plot_years()
 ax.set_ylabel("[t CO2 / yr]")
 ax.set_xlabel("Year")
 plt.show()

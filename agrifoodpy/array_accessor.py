@@ -18,7 +18,6 @@ class XarrayAccessorBase(object):
         ----------
         items : list, int, string
             list of item names to be added to the data
-        
         copy_from : list, int, string, optional
             If provided, this is the list of items already on the array
             to copy data from.
@@ -37,7 +36,6 @@ class XarrayAccessorBase(object):
         # Check for duplicates
         indexes = np.unique(items, return_index=True)[1]
         items = [items[index] for index in sorted(indexes)] #issues with np.unique
-        
 
         new_items = xr.DataArray(data = np.ones(len(items)),
                                 coords = {"Item":items})
@@ -62,7 +60,7 @@ class XarrayAccessorBase(object):
 
         Parameters
         ----------
-        new_regions : list, int, string
+        regions : list, int, string
             list of region names to be added to the data
         copy_from : list, int, string
             If provided, this is the list of regions already on the object to
@@ -78,6 +76,9 @@ class XarrayAccessorBase(object):
         """
         
         fbs = self._obj
+
+        if np.isscalar(regions):
+            regions = [regions]
 
         indexes = np.unique(regions, return_index=True)[1]
         regions = [regions[index] for index in sorted(indexes)]
@@ -121,15 +122,25 @@ class XarrayAccessorBase(object):
 
         fbs = self._obj
 
+        if np.isscalar(years):
+            years = [years]
+
         indexes = np.unique(years, return_index=True)[1]
         years = [years[index] for index in sorted(indexes)]
         
-        if projection == "empty":
-            data = np.zeros(len(years))*np.nan
-        elif projection == "constant":
-            data = np.ones(len(years))
+        if isinstance(projection, str):
+            if projection == "empty":
+                data = np.zeros(len(years))*np.nan
+            elif projection == "constant":
+                data = np.ones(len(years))
+            else:
+                raise ValueError("If a string, 'projection' can only be 'empty'\
+                                 or 'constant'")
+            
         else:
+            # Should raise an exception if sizes do not match
             data = np.ones(len(years)) * projection
+        
         
         new_years = xr.DataArray(data=data,
                                     coords = {"Year":years})

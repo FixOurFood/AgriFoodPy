@@ -14,6 +14,15 @@ def test_add_years():
     
     fbs = XarrayAccessorBase(ds)
 
+    # Test adding single year
+
+    result_single = fbs.add_years(new_years[0])
+    expected_years_single = np.concatenate([years, [new_years[0]]])
+
+    assert np.array_equal(result_single["Year"], expected_years_single)
+    assert np.isnan(result_single["data"].loc[{"Year":new_years[0]}].to_numpy()
+                    ).all()
+
     # Test adding years with "empty" projection
     result_empty = fbs.add_years(new_years, projection="empty")
 

@@ -427,11 +427,11 @@ class FoodBalanceSheet(XarrayAccessorBase):
 
         return ax
 
-@xr.register_dataarray_accessor("fes")
+@xr.register_dataarray_accessor("fbs")
 class FoodElementSheet(XarrayAccessorBase):
         
-    def plot_years(self, show="Year", ax=None, colors=None, labels=None,
-                   stack=True, **kwargs):
+    def plot_years(self, show=None, stack=True,ax=None, colors=None,
+                   labels=None, **kwargs):
         """ Fill plot with quantities at each year value
 
         Produces a vertical fill plot with quantities for each year on the
@@ -443,14 +443,20 @@ class FoodElementSheet(XarrayAccessorBase):
         Parameters
         ----------
         food : xarray.Dataarray
-            Input Dataarray containing a "Year" coordinate and optionally, a
-
+            Input Dataarray containing a "Year" coordinate and optionally,
+            additional coordinates to dissagregate.
         show : str, optional
             Name of the coordinate to dissagregate when filling the vertical
             plot. The quantities are summed along the remaining coordinates.
             If the coordinate is not provided or does not exist in the input,
             all coordinates are summed and a plot with a single fill curve is
             returned.
+        stack : boolean, optional
+            Whether to stack fill plots or not. If 'True', the fill curves are
+            stacked on top of each other and the upper fill curve represents the
+            sum of all elements for a given year.
+            If 'false', each element along the 'show' dimension is plotted
+            starting from the origin.         
         ax : matplotlib.pyplot.artist, optional
             Axes on which to draw the plot. If not provided, a new artist is
             created.
@@ -478,11 +484,12 @@ class FoodElementSheet(XarrayAccessorBase):
         if "Year" not in sum_dims:
             raise TypeError("'Year' dimension not found in array data")
 
-        # Define the cumsum and sum dims and check for one element dims
-        sum_dims.remove("Year")
+        # Define new ax if not provided
         if ax is None:
             f, ax = plt.subplots(1, **kwargs)
 
+        # Define the cumsum and sum dims and check for one element dims
+        sum_dims.remove("Year")
         if show in sum_dims:
             sum_dims.remove(show)
             size_cumsum = fbs.sizes[show]
@@ -506,7 +513,10 @@ class FoodElementSheet(XarrayAccessorBase):
         print_labels = True
         if labels is None:
             # empty label placeholder and no-label flag
-            labels = np.empty(len(fbs[show].values))
+            if show is not None:
+                labels = np.empty(len(fbs[show].values))
+            else:
+                labels = np.empty(len(fbs["Year"].values))
             print_labels = False
 
         elif np.all(labels == "show"):
@@ -518,12 +528,13 @@ class FoodElementSheet(XarrayAccessorBase):
             ax.plot(years, cumsum, color=colors[0], linewidth=0.5, label=labels)
         else:
             for id in reversed(range(size_cumsum)):
-                ax.fill_between(years, cumsum[id], color=colors[id], alpha=0.5)
-                ax.plot(years, cumsum[id], color=colors[id], linewidth=0.5,
+                ax.fill_between(years, cumsum.isel({show:id}), color=colors[id], alpha=0.5)
+                ax.plot(years, cumsum.isel({show:id}), color=colors[id], linewidth=0.5,
                         label=labels[id])
 
         ax.set_xlim(years.min(), years.max())
         ax.set_ylim(bottom=0)
+        ax.set_xlabel("Year")
 
         if print_labels:
             ax.legend()
