@@ -93,7 +93,7 @@ affiliations:
  - name: Global Sustainability Institute, Anglia Ruskin University, Cambridge CB1 1PT, UK
    index: 11
    
-date: October 2023
+date: November 2023
 bibliography: paper.bib
 ---
 
@@ -189,6 +189,12 @@ AgriFoodPy provides a consistent standard for agrifood data distribution,
 while also allowing external models and packages to coexist and interoperate,
 allowing a holistic approach to agrifood modeling.
 
+<!-- What projects are or will employ AgriFoodPy  -->
+Plans for future use in research and communication include the FixOurFood
+agrifood calculator (https://fixourfood.streamlit.app/), an interactive
+modelling tool to evaluate the effect of food system transformations in the UK.
+There are also plans to publish a paper on global diets their social and
+environmental impacts. 
 
 # Acknowledgements
 
