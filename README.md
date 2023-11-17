@@ -18,17 +18,10 @@ agri-food system interventions on current and future metric values. -->
 
 ## Installation:
 
-In the future, AgriFoodPy will be _pip_ installable, by running
+AgriFoodPy can be installed using _pip_, by running
 
 ```bash
 pip install agrifoodpy
-```
-
-Currently, you install the package directly from this repository by running:
-
-
-```bash
-pip install git+https://github.com/FixOurFood/agrifoodpy-data.git
 ```
 
 ## Usage:
