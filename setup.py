@@ -5,11 +5,11 @@ HERE = pathlib.Path(__file__).parent
 
 VERSION = '0.1.0'
 PACKAGE_NAME = 'AgriFoodPy'
-AUTHOR = 'FixOurFood'
+AUTHOR = 'FixOurFood developers'
 AUTHOR_EMAIL = 'juanpablo.cordero@york.ac.uk'
 URL = 'https://github.com/FixOurFood/AgriFoodPy'
 
-LICENSE = 'Apache License 2.0'
+LICENSE = 'BSD-3-Clause license'
 DESCRIPTION = 'A package for modelling food systems'
 LONG_DESCRIPTION = (HERE / "README.md").read_text()
 LONG_DESC_TYPE = "text/markdown"
