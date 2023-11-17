@@ -16,7 +16,7 @@ import numpy as np
 
 from agrifoodpy_data.food import FAOSTAT
 
-from agrifoodpy.food.food import FoodBalanceSheet
+import agrifoodpy.food
 from agrifoodpy.food.model import balanced_scaling
 
 from matplotlib import pyplot as plt
