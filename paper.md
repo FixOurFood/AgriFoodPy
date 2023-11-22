@@ -10,7 +10,6 @@ authors:
     affiliation: 1 # (Multiple affiliations must be quoted)
 
   - name: Kevin Donkers
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 2
 
   - name: Ian Harrison
@@ -22,11 +21,9 @@ authors:
     affiliation: 1
 
   - name: Angelina Frankowska
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 4
 
   - name: Michelle Cain
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 4
 
   - name: Neil Ward
@@ -34,23 +31,18 @@ authors:
     affiliation: 5
 
   - name: Jez Frendenburgh
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 5
 
   - name: Edward Pope
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 2
 
   - name: Alana Kluczkovski
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 1
 
   - name: Ximena Schmidt
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 6
 
   - name: Jacqueline Silva
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 7
 
   - name: Christian Reynolds
@@ -62,7 +54,6 @@ authors:
     affiliation: 9
 
   - name: Bob Doherty
-    orcid: XXXX-XXXX-XXXX-XXXX
     affiliation: 10
 
   - name: Aled Jones
