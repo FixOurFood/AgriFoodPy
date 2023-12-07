@@ -60,7 +60,7 @@ authors:
     affiliation: 6
 
   - name: Bob Doherty
-  - orcid: 0000-0001-6724-7065
+    orcid: 0000-0001-6724-7065
     affiliation: 10
 
   - name: Aled Jones
