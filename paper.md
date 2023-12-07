@@ -21,9 +21,11 @@ authors:
     affiliation: 1
 
   - name: Angelina Frankowska
+    orcid: 0000-0003-1483-114X
     affiliation: 4
 
   - name: Michelle Cain
+    orcid: 0000-0003-2062-6556
     affiliation: 4
 
   - name: Neil Ward
@@ -34,26 +36,31 @@ authors:
     affiliation: 5
 
   - name: Edward Pope
+    orcid: 0000-0002-8295-2667
     affiliation: 2
 
   - name: Alana Kluczkovski
-    affiliation: 1
-
-  - name: Ximena Schmidt
+    orcid: 0000-0001-6462-6801
     affiliation: 6
 
-  - name: Jacqueline Silva
+  - name: Ximena Schmidt
+    orcid: 0000-0003-0157-2679
     affiliation: 7
+
+  - name: Jacqueline Silva
+    orcid: 0000-0002-6082-8905
+    affiliation: 8
 
   - name: Christian Reynolds
     orcid: 0000-0002-1073-7394
-    affiliation: 8
+    affiliation: 9
 
   - name: Katherine Denby
     orcid: 0000-0002-7857-6814
-    affiliation: 9
+    affiliation: 6
 
   - name: Bob Doherty
+  - orcid: 0000-0001-6724-7065
     affiliation: 10
 
   - name: Aled Jones
@@ -71,13 +78,13 @@ affiliations:
    index: 4
  - name: School of Environmental Sciences, University of East Anglia, Norwich, UK
    index: 5
- - name: Equitable Development and Resilience Research Group, College of Engineering, Design and Physical Science, Brunel University London, London, UB8 3PH, UK
-   index: 6
- - name: Global Academy of Agriculture and Food Systems, Alexander Robertson Building, Easter Bush Campus, Roslin, Midlothian EH25 9RG
-   index: 7
- - name: Centre for Food Policy, City, University of London, Northampton Square, London, EC1V 0HB, UK
-   index: 8
  - name: Centre for Novel Agricultural Products (CNAP), Department of Biology, University of York, York, YO10 5DD, UK
+   index: 6
+ - name: Equitable Development and Resilience Research Group, College of Engineering, Design and Physical Science, Brunel University London, London, UB8 3PH, UK
+   index: 7
+ - name: Global Academy of Agriculture and Food Systems, The University of Edinburgh. Charnock Bradley Building, Easter Bush Campus, EH25 9RG.
+   index: 8
+ - name: Centre for Food Policy, City, University of London, Northampton Square, London, EC1V 0HB, UK
    index: 9
  - name: School for Business and Society, University of York
    index: 10
@@ -191,6 +198,11 @@ environmental impacts.
 
 JPC, SLB, AF, MC, KD, BD, AK and FixOurFood’s work was supported by the UKRI
 Transforming Food Systems Strategic Priority Fund (grant number BB/V004581/1).
+NW & JF are grateful for funding from the AFN Network+ (UKRI Agri-food for Net
+Zero Network+) Grant Award EP/X011062/1
+CR was funded through Transforming the UK Food System for Healthy People and a
+Healthy Environment SPF Programme, Grant Award BB/V004719/1 Healthy soil,
+Healthy food, Healthy people (H3).
 This article has benefited from comments and suggestions of the following
 people: Daniel Lewis, Joe Kennedy, Nada Saidi, Adam Amara.
 
