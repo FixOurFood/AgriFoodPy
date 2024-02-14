@@ -1,6 +1,6 @@
 import numpy as np
 import xarray as xr
-from agrifoodpy.food.food import FoodBalanceSheet
+from agrifoodpy.food.food import FoodBalanceSheet, FoodElementSheet
 from agrifoodpy.food.food import FoodSupply
 import pytest
 
@@ -152,7 +152,8 @@ def test_SSR():
         data_vars=dict(
             imports=(["Year", "Item"], [[10, 20], [30, 40]]),
             exports=(["Year", "Item"], [[5, 10], [15, 20]]),
-            production=(["Year", "Item"], [[50, 60], [70, 80]])
+            production=(["Year", "Item"], [[50, 60], [70, 80]]),
+            domestic=(["Year", "Item"], [[55, 70], [85, 100]])
             ),
 
     coords=dict(Item=("Item", items), Year=("Year", years))
@@ -161,7 +162,6 @@ def test_SSR():
     fbs = FoodBalanceSheet(ds)
 
     # Test basic result on all items
-
     result_basic = fbs.SSR()
     ex_result_basic = xr.DataArray([0.88, 0.810810], dims=("Year"),
                                 coords={"Year": years})
@@ -183,6 +183,13 @@ def test_SSR():
 
     xr.testing.assert_allclose(result_peritem, ex_result_peritem)
 
+    # Test with domestic use
+    result_domestic = fbs.SSR(domestic="domestic")
+    ex_result_domestic = xr.DataArray([0.88, 0.810810], dims=("Year"),
+                                      coords={"Year": years})
+    
+    xr.testing.assert_allclose(result_domestic, ex_result_domestic)
+
 def test_IDR():
 
     items = ["Beef", "Apples"]
@@ -192,7 +199,8 @@ def test_IDR():
         data_vars=dict(
             imports=(["Year", "Item"], [[10, 20], [30, 40]]),
             exports=(["Year", "Item"], [[5, 10], [15, 20]]),
-            production=(["Year", "Item"], [[50, 60], [70, 80]])
+            production=(["Year", "Item"], [[50, 60], [70, 80]]),
+            domestic=(["Year", "Item"], [[55, 70], [85, 100]]),
             ),
       
     coords=dict(Item=("Item", items), Year=("Year", years))
@@ -221,6 +229,13 @@ def test_IDR():
                                      coords={"Year": years, "Item": items})
     
     xr.testing.assert_allclose(result_peritem, ex_result_peritem)
+
+    # Test with domestic use
+    result_domestic = fbs.IDR(domestic="domestic")
+    ex_result_domestic = xr.DataArray([0.24, 0.37837838], dims=("Year"),
+                                      coords={"Year": years})
+    
+    xr.testing.assert_allclose(result_domestic, ex_result_domestic)
 
 def test_scale_add():
 
@@ -365,3 +380,91 @@ def test_scale_element():
     result_year = fbs.scale_element("production", scale_year)
     xr.testing.assert_equal(result_year["production"],
                             [[0.5], [2.0]]*ds["production"])
+
+def test_plot_bars():
+
+    items = ["Beef", "Apples"]
+    years = [2020, 2021]
+
+    ds = xr.Dataset(
+        data_vars=dict(
+            imports=(["Year", "Item"], [[10, 20], [30, 40]]),
+            exports=(["Year", "Item"], [[5, 10], [15, 20]]),
+            production=(["Year", "Item"], [[50, 60], [70, 80]])
+            ),
+        coords=dict(Item=("Item", items), Year=("Year", years)))
+    
+    fbs = FoodBalanceSheet(ds)
+
+    # Test default call
+    ax_default = fbs.plot_bars()
+
+    assert len(ax_default.patches) == 6
+    for ip, w in enumerate(ds.sum(dim="Year").to_array().values.flatten()):
+        assert ax_default.patches[ip].get_width() == w
+
+    # Test with explicit "show" coordinate
+    ax_show = fbs.plot_bars(show="Year")
+    
+    assert len(ax_show.patches) == 6
+    for ip, w in enumerate(ds.sum(dim="Item").to_array().values.flatten()):
+        assert ax_show.patches[ip].get_width() == w
+
+    # Test with a single element
+    ax_single = fbs.plot_bars(elements=["production"])
+
+    assert len(ax_single.patches) == 2
+    for ip, w in enumerate(ds["production"].sum(dim="Year").values.flatten()):
+        assert ax_single.patches[ip].get_width() == w
+
+    # Test with a Non-dimension "show"
+    ds_nondim = ds.assign_coords({"Origin":("Item", ["Animal", "Plant"])})
+    assert "Origin" not in ds_nondim.dims
+    fbs_nondim = FoodBalanceSheet(ds_nondim)
+
+    ax_nondim = fbs_nondim.plot_bars(show="Origin")
+    assert len(ax_nondim.patches) == 6
+    for ip, w in enumerate(ds_nondim.sum(dim="Year").to_array(
+        ).values.flatten()):
+        assert ax_nondim.patches[ip].get_width() == w
+
+    # Test with a "show" dimension not in the coordinate list
+    with pytest.raises(ValueError):
+        ax_notincoord = fbs.plot_bars(show="NotInCoord")
+       
+def test_plot_years():
+    
+    da = xr.DataArray(np.arange(15).reshape(5,3),
+                        coords=[('Year', [2010, 2011, 2012, 2013, 2014]),
+                                ('Region', ['A', 'B', 'C'])],
+                        dims=['Year', 'Region'])
+    
+    fbs = FoodElementSheet(da)
+
+    # Test default call
+    ax_default = fbs.plot_years()
+    assert len(ax_default.lines) == 1
+    assert np.array_equal(ax_default.lines[0].get_ydata(),
+                          da.sum(dim="Region").values)
+    assert np.array_equal(ax_default.lines[0].get_xdata(), da.Year.values)
+
+    # Test with explicit "show" coordinate
+    ax_show = fbs.plot_years(show="Region")
+    assert len(ax_show.lines) == 3
+    for il, line in enumerate(ax_show.lines):
+        assert np.array_equal(line.get_ydata(),
+                              da.cumsum(dim="Region").isel(Region=il).values)
+        assert np.array_equal(line.get_xdata(), da.Year.values)
+
+    # Test without stacking
+    ax_no_stack = fbs.plot_years(show="Region", stack=False)
+    assert len(ax_no_stack.lines) == 3
+    for il, line in enumerate(ax_no_stack.lines):
+        assert np.array_equal(line.get_ydata(), da.isel(Region=il).values)
+        assert np.array_equal(line.get_xdata(), da.Year.values)
+
+    # Test with array wihtout "Year" dimension
+    da_noyear = da.sum(dim="Year")
+    fbs_noyear = FoodElementSheet(da_noyear)
+    with pytest.raises(TypeError):
+        ax_noyear = fbs_noyear.plot_years()
