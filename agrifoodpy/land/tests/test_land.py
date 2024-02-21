@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 from agrifoodpy.land.land import LandDataArray
 import pytest
+import matplotlib.pyplot as plt
 
 def test_area_by_type():
     
@@ -159,3 +160,13 @@ def test_category_match():
     # Example with non-matching values
     result_non_matching = land_left.category_match(da_right, values_left=4)
     assert np.all(result_non_matching.isnull())
+
+def test_plot():
+    
+    data = np.random.rand(4, 5)
+    da = xr.DataArray(data, dims=['x', 'y'])
+    land = LandDataArray(da)
+    
+    # Test default plot
+    ax = land.plot()
+    assert isinstance(ax, plt.Axes)    

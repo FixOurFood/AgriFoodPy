@@ -11,6 +11,7 @@ FoodBalanceSheet or FoodElementSheet style xarray primitive.
 import numpy as np
 import xarray as xr
 import copy
+import warnings
 
 from agrifoodpy.array_accessor import XarrayAccessorBase
 
@@ -206,8 +207,8 @@ class FoodBalanceSheet(XarrayAccessorBase):
         
         return out
 
-    def SSR(self, items=None, per_item=False, production="production",
-            imports="imports", exports="exports"):
+    def SSR(self, items=None, per_item=False, domestic=None,
+            production="production", imports="imports", exports="exports"):
         """Self-sufficiency ratio
 
         Self-sufficiency ratio (SSR) or ratios for a list of item imports,
@@ -223,6 +224,8 @@ class FoodBalanceSheet(XarrayAccessorBase):
             list is provided, the SSR is computed for all items.
         per_item : bool, optional
             Whether to return an SSR for each item separately. Default is false
+        domestic : string, optional
+            Name of the DataArray containing the domestic use data
         production : string, optional
             Name of the DataArray containing the production data
         imports : string, optional
@@ -245,12 +248,18 @@ class FoodBalanceSheet(XarrayAccessorBase):
                 items = [items]
             fbs = fbs.sel(Item=items)
 
+        if domestic is not None:
+            domestic_use = fbs[domestic]
+        else:
+            domestic_use = fbs[production] + fbs[imports] - fbs[exports]
+
         if per_item:
-            return fbs[production] / (fbs[production] + fbs[imports] - fbs[exports])
+            return fbs[production] / domestic_use
 
-        return fbs[production].sum(dim="Item") / (fbs[production]+fbs[imports]-fbs[exports]).sum(dim="Item")
+        return fbs[production].sum(dim="Item") / domestic_use.sum(dim="Item")
 
-    def IDR(self, items=None, per_item=False):
+    def IDR(self, items=None, per_item=False, imports="imports", domestic=None,
+            production="production", exports="exports"):
         """Import-dependency ratio
 
         Import-ependency ratio (IDR) or ratios for a list of item imports,
@@ -266,6 +275,15 @@ class FoodBalanceSheet(XarrayAccessorBase):
             list is provided, the IDR is computed for all items.
         per_item : bool, optional
             Whether to return an IDR for each item separately. Default is false.
+        domestic : string, optional
+            Name of the DataArray containing the domestic use data
+        imports : string, optional
+            Name of the DataArray containing the imports data
+        exports : string, optional
+            Name of the DataArray containing the exports data
+        production : string, optional
+            Name of the DataArray containing the production data
+            
 
         Returns
         -------
@@ -282,10 +300,15 @@ class FoodBalanceSheet(XarrayAccessorBase):
                 items = [items]
             fbs = fbs.sel(Item=items)
 
-        if per_item:
-            return fbs["imports"] / (fbs["production"] + fbs["imports"] - fbs["exports"])
+        if domestic is not None:
+            domestic_use = fbs[domestic]
+        else:
+            domestic_use = fbs[production] + fbs[imports] - fbs[exports]
 
-        return fbs["imports"].sum(dim="Item") / (fbs["production"]+fbs["imports"]-fbs["exports"]).sum(dim="Item")
+        if per_item:
+            return fbs["imports"] / domestic_use
+
+        return fbs["imports"].sum(dim="Item") / domestic_use.sum(dim="Item")
 
     def plot_bars(self, show="Item", elements=None, inverted_elements=None,
                   ax=None, colors=None, labels=None, **kwargs):
@@ -340,7 +363,7 @@ class FoodBalanceSheet(XarrayAccessorBase):
 
         if elements is None:
             elements = list(fbs.keys())
-            plot_elements = elements
+            elements = elements
         elif np.isscalar(elements):
             elements = [elements]
 
@@ -351,8 +374,17 @@ class FoodBalanceSheet(XarrayAccessorBase):
         if show in bar_dims:
             bar_dims.remove(show)
             size_show = fbs.sizes[show]
+        elif show in fbs.coords:
+            new_fbs = FoodBalanceSheet(fbs)
+            new_fbs = FoodBalanceSheet(new_fbs.group_sum(coordinate=show))
+
+            return new_fbs.plot_bars(show=show, elements=elements,
+                                    inverted_elements=inverted_elements,
+                                    ax=ax, colors=colors, labels=labels,
+                                    **kwargs)
         else:
-            size_show = 1
+            raise ValueError(f"The coordinate {show} is not a valid "
+                             "dimension or coordinate of the Dataset.")
 
         # Make sure NaN and inf do not interfere
         fbs = fbs.fillna(0)
@@ -397,7 +429,7 @@ class FoodBalanceSheet(XarrayAccessorBase):
                 inverted_elements = [inverted_elements]
 
             len_elements += len(inverted_elements)
-            plot_elements = np.concatenate([elements, inverted_elements])
+            elements = np.concatenate([elements, inverted_elements])
 
             cumul = 0
             for ie, element in enumerate(reversed(inverted_elements)):
@@ -414,7 +446,7 @@ class FoodBalanceSheet(XarrayAccessorBase):
                         cumul += val
 
         # Plot decorations
-        ax.set_yticks(np.arange(len_elements), labels=plot_elements)
+        ax.set_yticks(np.arange(len_elements), labels=elements)
         ax.tick_params(axis="x",direction="in", pad=-12)
         ax.invert_yaxis()  # labels read top-to-bottom
         ax.set_ylim(len_elements,-1)
@@ -527,10 +559,16 @@ class FoodElementSheet(XarrayAccessorBase):
             ax.fill_between(years, cumsum, color=colors[0], alpha=0.5)
             ax.plot(years, cumsum, color=colors[0], linewidth=0.5, label=labels)
         else:
-            for id in reversed(range(size_cumsum)):
-                ax.fill_between(years, cumsum.isel({show:id}), color=colors[id], alpha=0.5)
-                ax.plot(years, cumsum.isel({show:id}), color=colors[id], linewidth=0.5,
-                        label=labels[id])
+            ax.fill_between(years, cumsum.isel({show:0}), color=colors[0],
+                            alpha=0.5)
+            ax.plot(years, cumsum.isel({show:0}), color=colors[0],
+                    linewidth=0.5, label=labels[0])
+            for id in range(1,size_cumsum):
+                ax.fill_between(years, cumsum.isel({show:id}),
+                                cumsum.isel({show:id-1}), color=colors[id],
+                                alpha=0.5)
+                ax.plot(years, cumsum.isel({show:id}), color=colors[id],
+                        linewidth=0.5,label=labels[id])
 
         ax.set_xlim(years.min(), years.max())
         ax.set_ylim(bottom=0)
