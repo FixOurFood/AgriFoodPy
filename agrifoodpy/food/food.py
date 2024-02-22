@@ -529,9 +529,18 @@ class FoodElementSheet(XarrayAccessorBase):
                 cumsum = fbs.cumsum(dim=show).transpose(show, ...)
             else:
                 cumsum = fbs
-        else:
+        elif show in fbs.coords:
+            new_fbs = FoodElementSheet(fbs)
+            new_fbs = FoodElementSheet(new_fbs.group_sum(coordinate=show))
+        
+            return new_fbs.plot_years(show=show, stack=stack, ax=ax,
+                                      colors=colors, labels=labels, **kwargs)
+        elif show is None:
             size_cumsum = 1
             cumsum = fbs
+        else:
+            raise ValueError(f"The coordinate {show} is not a valid "
+                             "dimension or coordinate of the Dataarray.")
 
         # Collapse remaining dimensions
         cumsum = cumsum.sum(dim=sum_dims)
@@ -551,7 +560,7 @@ class FoodElementSheet(XarrayAccessorBase):
                 labels = np.empty(len(fbs["Year"].values))
             print_labels = False
 
-        elif np.all(labels == "show"):
+        elif np.all(labels == "show") and show is not None:
             labels = fbs[show].values
 
         # Plot
