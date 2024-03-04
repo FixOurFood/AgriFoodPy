@@ -39,11 +39,11 @@ As an example, using the food module
 
 ```python
 # import the FoodBalanceSheet accessor and FAOSTAT from agrifoodpy_data
-from agrifoodpy.food import FoodBalanceSheet
+from agrifoodpy.food.food import FoodBalanceSheet
 from agrifoodpy_data.food import FAOSTAT
 
-# Extract data for the UK in 2020 (Region=229, Year=2020)
-food_uk = FAOSTAT.sel(Region=229, Year=2020)
+# Extract data for the UK (Region=229)
+food_uk = FAOSTAT.sel(Region=229)
 
 # Compute the Self-sufficiency ratio using the fbs accessor SSR function
 SSR = food_uk.fbs.SSR(per_item=True)
@@ -57,7 +57,7 @@ imported
 
 ```python
 # import the FoodBalanceSheet accessor and FAOSTAT from agrifoodpy_data
-from agrifoodpy.food import FoodBalanceSheet
+from agrifoodpy.food.food import FoodBalanceSheet
 from agrifoodpy_data.food import FAOSTAT
 import agrifoodpy.food.model as food_model
 
@@ -67,6 +67,8 @@ food_uk = FAOSTAT.sel(Region=229, Year=2020)
 # Scale consumption of meat to 50%, 
 food_uk_scaled = food_model.balanced_scaling(food_uk,
                                             items=2731,
+                                            element="food",
+                                            origin="production",
                                             scale=0.5,
                                             constant=True)
 
