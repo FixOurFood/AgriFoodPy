@@ -1,7 +1,7 @@
 # AgriFoodPy
 
 [![Documentation Status](https://readthedocs.org/projects/agrifoodpy/badge/?version=latest)](https://agrifoodpy.readthedocs.io/en/latest/?badge=latest)
-[![Tests status](https://github.com/FixOurFood/AgriFoodPy/actions/workflows/test-conda.yml/badge.svg?branch=main)](https://github.com/FixOurFood/AgriFoodPy/actions/workflows/test-conda.yml)
+[![Tests](https://github.com/FixOurFood/AgriFoodPy/actions/workflows/test-conda.yml/badge.svg)](https://github.com/FixOurFood/AgriFoodPy/actions/workflows/test-conda.yml)
 
 AgriFoodPy is a collection of methods for manipulating and modelling agrifood
 data. It provides modelling for a variety of aspects of the food system,
@@ -44,6 +44,7 @@ As an example, using the food module
 # import the FoodBalanceSheet accessor and FAOSTAT from agrifoodpy_data
 from agrifoodpy.food.food import FoodBalanceSheet
 from agrifoodpy_data.food import FAOSTAT
+import matplotlib.pyplot as plt
 
 # Extract data for the UK (Region=229)
 food_uk = FAOSTAT.sel(Region=229)
@@ -53,6 +54,7 @@ SSR = food_uk.fbs.SSR(per_item=True)
 
 # Plot the results using the fbs accessor plot_years function
 SSR.fbs.plot_years()
+plt.show()
 ```
 
 To use the specific models and interfaces to external code, these need to be
@@ -63,6 +65,7 @@ imported
 from agrifoodpy.food.food import FoodBalanceSheet
 from agrifoodpy_data.food import FAOSTAT
 import agrifoodpy.food.model as food_model
+import matplotlib.pyplot as plt
 
 # Extract data for the UK in 2020 (Region=229, Year=2020)
 food_uk = FAOSTAT.sel(Region=229, Year=2020)
@@ -78,11 +81,20 @@ food_uk_scaled = food_model.balanced_scaling(food_uk,
 # Plot bar summary of resultant food quantities
 food_uk_scaled.fbs.plot_bars(elements=["production","imports"],
                             inverted_elements=["exports","food"])
+plt.show()
 ```
 
 In he future, we plan to implement a pipeline manager to automatize certain
 aspects of the agrifood execution, and to simulate a comprehensive model where
 all aspects of the food system are considered simultaneously.
+
+## Examples and documentation
+
+[Examples](https://agrifoodpy.readthedocs.io/en/latest/examples/index.html#modules)
+demonstrating the functionality of AgriFoodPy can be the found in the
+[package documentation](https://agrifoodpy.readthedocs.io/en/latest/).
+These include the use of accessors to manipulate data and access to basic
+models.
 
 ## Contributing
 
