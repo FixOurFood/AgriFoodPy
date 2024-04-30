@@ -27,6 +27,13 @@ AgriFoodPy can be installed using _pip_, by running
 pip install agrifoodpy
 ```
 
+UK data to test the repository is available from the agrifoodpy_data repository
+which currently can be installed using
+
+```bash
+pip install git+https://github.com/FixOurFood/agrifoodpy-data.git@importable
+```
+
 ## Usage:
 
 Each of the four basic modules on AgriFoodPy (Food, Land, Impact, Population)
@@ -34,11 +41,12 @@ has its own set of basic array manipulation functionality, a set of
 modelling methods to extract basic metrics from datasets, and interfaces with
 external modelling packages and code.
 
-Agrifoodpy employs _xarray_ accesors to add additional functionality on top of
-the array manipulation
+Agrifoodpy employs _xarray_ accesors to provide additional functionality on top
+of the array manipulation provided by xarray.
 
-Basic usage of the accesors depend on the type of array being manipulated
-As an example, using the food module
+Basic usage of the accesors depend on the type of array being manipulated.
+The following examples uses the **food** module with the importable UK data
+mentioned above: 
 
 ```python
 # import the FoodBalanceSheet accessor and FAOSTAT from agrifoodpy_data
