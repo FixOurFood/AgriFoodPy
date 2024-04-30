@@ -1,6 +1,7 @@
 # AgriFoodPy
 
 [![Documentation Status](https://readthedocs.org/projects/agrifoodpy/badge/?version=latest)](https://agrifoodpy.readthedocs.io/en/latest/?badge=latest)
+[![Tests status](https://github.com/FixOurFood/AgriFoodPy/actions/workflows/test-conda.yml/badge.svg?branch=main)](https://github.com/FixOurFood/AgriFoodPy/actions/workflows/test-conda.yml)
 
 AgriFoodPy is a collection of methods for manipulating and modelling agrifood
 data. It provides modelling for a variety of aspects of the food system,
