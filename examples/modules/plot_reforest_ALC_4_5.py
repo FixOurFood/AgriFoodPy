@@ -30,6 +30,7 @@ from matplotlib import pyplot as plt
 
 land_use = LC.copy(deep=True)
 land_use = land_use["dominant_aggregate"]
+ALC = ALC.grade
 
 f, axes = plt.subplots(1, 2, sharey=True)
 plt.subplots_adjust(wspace=0)
