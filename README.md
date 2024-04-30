@@ -27,7 +27,7 @@ AgriFoodPy can be installed using _pip_, by running
 pip install agrifoodpy
 ```
 
-UK data to test the repository is available from the agrifoodpy_data repository
+UK data to test the package is available from the agrifoodpy_data repository
 which currently can be installed using
 
 ```bash
