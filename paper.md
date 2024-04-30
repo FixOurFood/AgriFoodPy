@@ -10,6 +10,7 @@ authors:
     affiliation: 1 # (Multiple affiliations must be quoted)
 
   - name: Kevin Donkers
+    orcid: 0000-0003-0160-8467
     affiliation: 2
 
   - name: Ian Harrison
@@ -70,7 +71,7 @@ authors:
 affiliations:
  - name: Department of Environment and Geography Wentworth Way, University of York, Heslington, York, YO10 5NG, UK
    index: 1
- - name: Met Office Hadley Centre, Met Office, Fitz Roy Road, Exeter, Devon, UK
+ - name: Land, Environment, Economics and Policy Institute (LEEP), University of Exeter Business School, Exeter, UK
    index: 2
  - name: School of Physics and Astronomy, Cardiff University, Cardiff CF24 3AA, UK
    index: 3
@@ -198,6 +199,9 @@ environmental impacts.
 
 JPC, SLB, AF, MC, KD, BD, AK and FixOurFood’s work was supported by the UKRI
 Transforming Food Systems Strategic Priority Fund (grant number BB/V004581/1).
+KD was funded via a doctoral training grant awarded as part of the UKRI AI
+Centre for Doctoral Training in Environmental Intelligence (UKRI grant number
+EP/S022074/1).
 NW & JF are grateful for funding from the AFN Network+ (UKRI Agri-food for Net
 Zero Network+) Grant Award EP/X011062/1
 CR was funded through Transforming the UK Food System for Healthy People and a
