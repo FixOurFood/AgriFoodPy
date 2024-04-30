@@ -1,5 +1,7 @@
 # AgriFoodPy
 
+[![Documentation Status](https://readthedocs.org/projects/agrifoodpy/badge/?version=latest)](https://agrifoodpy.readthedocs.io/en/latest/?badge=latest)
+
 AgriFoodPy is a collection of methods for manipulating and modelling agrifood
 data. It provides modelling for a variety of aspects of the food system,
 including food consumption paterns, environmental impact and emissions data,
