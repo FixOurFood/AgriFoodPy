@@ -3,5 +3,4 @@ sphinx_rtd_theme
 myst-parser
 sphinx-gallery
 
-netcdf4
 git+https://github.com/FixOurFood/agrifoodpy-data.git@importable
