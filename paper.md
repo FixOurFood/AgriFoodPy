@@ -98,50 +98,57 @@ bibliography: paper.bib
 
 # Summary
 
-<!-- What is the package -->
-`AgriFoodPy` is an open-source Python package for dataset manipulation,
-interoperability, simulation, and modeling of agrifood systems.
+<!-- What is this package -->
+`AgriFoodPy` is an open-source Python package for processing, simulation,
+and modeling of agrifood datasets and systems.
+By employing `xarray` [@hoyer2017xarray] as the primary data structure, `AgriFoodPy`
+provides methods to manipulate tabular data by extending `xarray` functionality
+via accessor classes. It acts as an accessibility and interoperability
+layer between for data sources and external packages, and also bundles with a
+library of models for use without any additional requirements. 
 
-<!-- Some specifics on how it does what it does -->
-By employing xarray [@hoyer2017xarray] as the primary data structure, AgriFoodPy
-provides access methods to manipulate tabular data by extending xarray
-functionality via accessors.
-
-A separate repository, `agrifoodpy_data`, is also maintained in parallel to
+A separate repository, `agrifoodpy_data`, is actively maintained in parallel to
 provide access to local and global agrifood datasets, including geospatial land
 use and classification data [@CEH], food supply [@FAOSTAT], life cycle
 assessment [@PN18], and population data [@UN]. The `AgriFoodPy` framework is
 region-agnostic and provides facilities to model and simulate processes and
-interventions regardless of their geographic origin.
-As an example, current functionality can be used to construct predictions on the
-effect of dietary change on greenhouse emissions, the carbon sequestration of
-transforming agricultural land use, or consequences of modifying farming
-practices on operational costs.  
+intervention impacts regardless of their geographic origin.
+
+# Features
+
+<!-- Current functionality -->
+Version 0.1 provides table manipulation methods to extend the coordinate
+dimensions of `xarray` Datasets and DataArrays, extract summary statistics, and
+includes charting methods to analyze and display data.
+It also includes a library of intervention models for supply and demand
+changes, afforestation and agroecology, and land carbon sequestration. These can
+be used to predict the effectiveness of systemic interventions through key
+metrics of the food system.
+
+<!-- External models and interoperability-->
+`AgriFoodPy` provides a framework to build interfaces to external tools and
+packages which can be used by the community to extend its functionality and
+widen the scope of the simulated systems.
+This makes it the first multipurpose tool of its kind, allowing wide analysis
+of food systems data by integrating diverse datasets, models and
+indicators into a unified framework. This allows researchers to make informed
+decisions and identify opportunities for systemic change in all areas of food
+systems, ranging from production, consumption, and land use to food security,
+nutrition, health, and policy-making.
+
+<!-- Future functionality -->
+Future releases will provide access to more models and community-contributed
+datasets formatted using `xarray`. Additionally, `AgriFoodPy` will implement a
+pipeline manager to perform end-to-end simulations of agrifood systems, which
+can be used to speed up the comparison of multiple scenarios and build easily
+shareable and reproducible workflows.
 
 <!-- Open source development and maintenance -->
 Open-source code and community development will allow a transparent view into
 analysis choices and data sources, which can help provide trustworthy
-evidence-based support for data-driven policymaking. AgriFoodPy is developed and
+evidence-based support for data-driven policymaking. `AgriFoodPy` is developed and
 maintained by a diverse community of domain experts with a focus on software
 sustainability and interoperability.
-
-
-<!-- Current functionality -->
-Version 0.1 provides basic table manipulation methods to extend the coordinate
-dimensions of xarray Datasets and DataArrays, extract summary statistics and
-indicators, plotting methods to analyze and display data.
-It also includes a library of intervention models such as diet change,
-afforestation and agroecology and land carbon sequestration.
-We have also built an interface to external an atmospheric model [@fair].
-We plan to extend this library of interfaces to incorporate other open source
-tools, including socioeconomic, land use, environmental, health, and policy
-modelling packages.
-
-<!-- Future functionality -->
-Future releases will provide access to more models and community-contributed
-datasets formatted using xarray. Additionally, AgriFoodPy will implement a
-pipeline manager to perform end-to-end simulations of agrifood systems, which
-can be used to speed up the comparison of multiple scenarios.
 
 # Statement of need
 
@@ -173,25 +180,25 @@ difficult to draw conclusions from equivalent comparisons between different
 interventions and policy decisions.
 
 <!-- What has been made -->
-Few open initiatives exist focused on analysis and modelling of agrifood
-and enviromental related data, e.g., The Environmental Data Science book
+Few open initiatives exist focused on analysis and modeling of agrifood
+and environmental related data, e.g., The Environmental Data Science book
 (https://edsbook.org/).
-The research community has developed open-source packages that adress
-some individual aspects of modelling agrifood systems, such as geospatial
-imaging (e.g., `Geopandas` [@geopandas], `Rasterio` [@rasterio]), atmospheric
-and climate modeling (`Fair` [@fair]) in Python, and other open softwares in
-other languages, such as agriculture and farming (`APSIM` [@APSIM]) and life
-cycle assestment (`OpenLCA`, www.openlca.org).
+The research community has developed open-source tools that address
+some individual aspects of modeling agrifood systems, such as geospatial
+imaging [e.g., `GeoPandas`, @geopandas; `Rasterio`, @rasterio], atmospheric
+and climate modeling [`Fair`, @fair] in Python, and other open softwares in
+other languages, including agriculture and farming [`APSIM`, @APSIM] and life
+cycle assessment (`OpenLCA`, www.openlca.org).
 
 <!-- How does this package connect with other packages and projects -->
-AgriFoodPy provides a consistent standard for agrifood data distribution,
+`AgriFoodPy` provides a consistent standard for agrifood data distribution,
 while also allowing external models and packages to coexist and interoperate,
-allowing a holistic approach to agrifood modeling.
+which facilitates a holistic approach to agrifood modeling.
 
 <!-- What projects are or will employ AgriFoodPy  -->
 Plans for future use in research and communication include the FixOurFood
 agrifood calculator (https://fixourfood.streamlit.app/), an interactive
-modelling tool to evaluate the effect of food system transformations in the UK.
+modeling tool to evaluate the effect of food system transformations in the UK.
 There are also plans to publish a paper on global diets their social and
 environmental impacts. 
 
