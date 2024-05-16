@@ -5,14 +5,14 @@ channels:
 
 dependencies:
   - python>=3.9
-  - pip
-  - numpy
-  - netcdf4
-  - xarray
-  - jupyter
-  - ipython
-  - pandas
-  - matplotlib
-  - pytest
+  - pip>=24.0
+  - numpy>=1.26.4
+  - netcdf4>=1.6.2
+  - xarray>=2023.6.0
+  - jupyter>=1.0.0
+  - ipython>=8.15.0
+  - pandas>=2.2.1
+  - matplotlib>=3.8.4
+  - pytest>=7.4.0
   - pip:
-    - fair
+    - fair>=2.1.4
