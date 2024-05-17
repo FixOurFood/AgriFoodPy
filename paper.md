@@ -104,7 +104,7 @@ and modeling of agrifood datasets and systems.
 By employing `xarray` [@hoyer2017xarray] as the primary data structure, `AgriFoodPy`
 provides methods to manipulate tabular data by extending `xarray` functionality
 via accessor classes. It acts as an accessibility and interoperability
-layer between for data sources and external packages, and also bundles with a
+layer between data sources and external packages, and also bundles with a
 library of models for use without any additional requirements. 
 
 A separate repository, `agrifoodpy_data`, is actively maintained in parallel to
@@ -156,7 +156,7 @@ sustainability and interoperability.
 Providing food for an ever-growing population while reducing the impact of human
 activity on the environment has become one of the main global challenges.
 Local and intergovernmental independent committees
-(https://www.theccc.org.uk/, https://www.ipcc.ch/) have reported the importance
+(https://www.theccc.org.uk/, https://www.ipcc.ch/) have reported the impact
 of food production on climate change. The scenarios and projections in their
 reports also highlight the need for precise and transparent modeling of
 different aspects of the food system to help stakeholders understand the
@@ -181,7 +181,7 @@ interventions and policy decisions.
 
 <!-- What has been made -->
 Few open initiatives exist focused on analysis and modeling of agrifood
-and environmental related data, e.g., The Environmental Data Science book
+and environmental related data, e.g., the Environmental Data Science book
 (https://edsbook.org/).
 The research community has developed open-source tools that address
 some individual aspects of modeling agrifood systems, such as geospatial
