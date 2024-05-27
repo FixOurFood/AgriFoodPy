@@ -69,27 +69,27 @@ authors:
     affiliation: 11
 
 affiliations:
- - name: Department of Environment and Geography Wentworth Way, University of York, Heslington, York, YO10 5NG, UK
+ - name: Department of Environment and Geography Wentworth Way, University of York, Heslington, York, YO10 5NG, United Kingdom
    index: 1
- - name: Land, Environment, Economics and Policy Institute (LEEP), University of Exeter Business School, Exeter, UK
+ - name: Land, Environment, Economics and Policy Institute (LEEP), University of Exeter Business School, Exeter, United Kingdom
    index: 2
- - name: School of Physics and Astronomy, Cardiff University, Cardiff CF24 3AA, UK
+ - name: School of Physics and Astronomy, Cardiff University, Cardiff CF24 3AA, United Kingdom
    index: 3
- - name: Centre for Environmental and Agricultural Informatics, School of Water, Energy and Environment, Cranfield University, Cranfield MK43 0AL, UK
+ - name: Centre for Environmental and Agricultural Informatics, School of Water, Energy and Environment, Cranfield University, Cranfield MK43 0AL, United Kingdom
    index: 4
- - name: School of Environmental Sciences, University of East Anglia, Norwich, UK
+ - name: School of Environmental Sciences, University of East Anglia, Norwich, United Kingdom
    index: 5
- - name: Centre for Novel Agricultural Products (CNAP), Department of Biology, University of York, York, YO10 5DD, UK
+ - name: Centre for Novel Agricultural Products (CNAP), Department of Biology, University of York, York, YO10 5DD, United Kingdom
    index: 6
- - name: Equitable Development and Resilience Research Group, College of Engineering, Design and Physical Science, Brunel University London, London, UB8 3PH, UK
+ - name: Equitable Development and Resilience Research Group, College of Engineering, Design and Physical Science, Brunel University London, London, UB8 3PH, United Kingdom
    index: 7
  - name: Global Academy of Agriculture and Food Systems, The University of Edinburgh. Charnock Bradley Building, Easter Bush Campus, EH25 9RG.
    index: 8
- - name: Centre for Food Policy, City, University of London, Northampton Square, London, EC1V 0HB, UK
+ - name: Centre for Food Policy, City, University of London, Northampton Square, London, EC1V 0HB, United Kingdom
    index: 9
  - name: School for Business and Society, University of York
    index: 10
- - name: Global Sustainability Institute, Anglia Ruskin University, Cambridge CB1 1PT, UK
+ - name: Global Sustainability Institute, Anglia Ruskin University, Cambridge CB1 1PT, United Kingdom
    index: 11
    
 date: November 2023
