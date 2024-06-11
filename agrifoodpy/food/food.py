@@ -172,7 +172,8 @@ class FoodBalanceSheet(XarrayAccessorBase):
 
         return out
 
-    def scale_add(self, element_in, element_out, scale, items=None, add=True):
+    def scale_add(self, element_in, element_out, scale, items=None, add=True,
+                  elasticity=None):
         """Scales item quantities of an element and adds the difference to
         another element DataArray
         
@@ -189,7 +190,10 @@ class FoodBalanceSheet(XarrayAccessorBase):
         items : list of int or list of str, optional
             List of items to be scaled. If not provided, all items are scaled.
         add : boolean
-            Wether to add or subtract the difference to element_out 
+            Wether to add or subtract the difference to element_out
+        elasticity : float, float array_like optional
+            Fractional percentage of the difference that is added to each
+            element in element_out.
             
         Returns
         -------
@@ -199,11 +203,25 @@ class FoodBalanceSheet(XarrayAccessorBase):
         """
 
         fbs = self._obj
+        
+        if np.isscalar(element_out):
+            element_out = [element_out]
+
+        if np.isscalar(add):
+            add = [add] * len(element_out)
+
+        # If no item elasticity is provided, divide elasticity equally
+        if elasticity is None:
+            elasticity = [1.0/len(element_out)] * len(element_out)
+        elif np.isscalar(elasticity):
+            elasticity = [elasticity] * len(element_out)
 
         out = self.scale_element(element_in, scale, items)
         dif = fbs[element_in].fillna(0) - out[element_in].fillna(0)
 
-        out[element_out] += np.where(add, -1, 1)*dif
+        for elmnt, add_el, elast in zip(element_out, add, elasticity):
+            print(elmnt, add_el, elast, np.where(add_el, -1, 1))
+            out[elmnt] = out[elmnt] + np.where(add_el, -1, 1)*dif*elast
         
         return out
 
