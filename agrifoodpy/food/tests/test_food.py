@@ -269,8 +269,6 @@ def test_scale_add():
 
     fbs = FoodBalanceSheet(ds)
 
-    fbs._obj
-
     # Test with float scale on all items
     result_scalar = fbs.scale_add(elin, elout, scalar_scale)
     assert np.array_equal(result_scalar[elin], ds[elin]*scalar_scale)
@@ -334,6 +332,48 @@ def test_scale_add():
     assert np.array_equal(result_xarray_item[elin], ds[elin]*xarray_item_scale)
     assert np.array_equal(result_xarray_item[elout], ds[elout]
                           + (result_xarray_item[elin] - ds[elin]))
+    
+    # Test with expliciit elasticity
+    elasticity = 0.5
+    result_elasticity = fbs.scale_add(elin, elout, scalar_scale,
+                                      elasticity=elasticity)
+    assert np.array_equal(result_elasticity[elin], ds[elin]*scalar_scale)
+    assert np.array_equal(result_elasticity[elout], ds[elout] +
+                          (result_elasticity[elin] - ds[elin])*elasticity)
+
+    # Test with multiple out elements, single elasticity
+    elout = ["imports", "exports"]
+    result_multi = fbs.scale_add(elin, elout, scalar_scale,
+                                 elasticity=elasticity)
+    assert np.array_equal(result_multi[elin], ds[elin]*scalar_scale)
+
+    for elmnt in elout:
+        assert np.array_equal(result_multi[elmnt], ds[elmnt] +
+                              (result_multi[elin] - ds[elin])*elasticity)
+        
+    # Test with multiple out elements, multiple elasticities
+    elout = ["imports", "exports"]
+    elasticity = [0.2, 0.7]
+    result_multi = fbs.scale_add(elin, elout, scalar_scale,
+                                 elasticity=elasticity)
+    assert np.array_equal(result_multi[elin], ds[elin]*scalar_scale)
+
+    for elmnt, elast in zip(elout, elasticity):
+        assert np.array_equal(result_multi[elmnt], ds[elmnt] +
+                              (result_multi[elin] - ds[elin])*elast)
+        
+    # Test with multiple out elements, multiple elasticities and different signs
+    elout = ["imports", "exports"]
+    elasticity = [0.2, 0.7]
+    add = [False, True]
+    result_multi = fbs.scale_add(elin, elout, scalar_scale,
+                                 elasticity=elasticity, add=add)
+    assert np.array_equal(result_multi[elin], ds[elin]*scalar_scale)
+
+    for elmnt, elast, sign in zip(elout, elasticity, add):
+        assert np.array_equal(result_multi[elmnt], ds[elmnt] +
+                              np.where(sign, 1, -1) * (result_multi[elin]
+                                                       - ds[elin])*elast)
 
 def test_scale_element():
     

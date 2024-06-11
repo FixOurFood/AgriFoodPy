@@ -169,4 +169,35 @@ def test_plot():
     
     # Test default plot
     ax = land.plot()
-    assert isinstance(ax, plt.Axes)    
+    assert isinstance(ax, plt.Axes)
+
+def test_dominant_class():
+    classes = ["a", "b", "c"]
+    coords = {"x": [0, 1, 2, 3], "y": [0, 1, 2], "class": classes}
+    coords_index = {"x": [0, 1, 2, 3], "y": [0, 1, 2]}
+    
+    data = np.random.rand(len(coords["x"]),
+                          len(coords["y"]),
+                          len(coords["class"]))
+    
+    da = xr.DataArray(data, coords=coords)
+    land = LandDataArray(da)
+
+    # Test dominant class without coord name
+    result_no_coord = land.dominant_class()
+    assert result_no_coord.equals(da.idxmax(dim="class"))
+
+    # Test dominant class with coord name
+    result_coord = land.dominant_class(class_coord="class")
+    assert result_coord.equals(da.idxmax(dim="class"))
+
+    # Test dominant class with non-matching coord name
+    with pytest.raises(KeyError):
+        result_non_matching = land.dominant_class(class_coord="non_matching")
+
+    # Test with return index set to True
+    result_return_index = land.dominant_class(return_index=True)
+    result_return_index_truth = xr.DataArray(np.argmax(data, axis=2),
+                                             coords=coords_index)
+
+    assert result_return_index.equals(result_return_index_truth)

@@ -112,7 +112,7 @@ def fair_co2_only(emissions):
     
     f.emissions.loc[{"scenario":"default",
                      "specie":"CO2",
-                     "config":"default"}] = emissions
+                     "config":"default"}] = emissions.to_numpy()
     
     # Run and return
     f.run(progress=False)
