@@ -20,7 +20,7 @@ Both have the same pixel scale and are defined over the same spatial grid.
 import numpy as np
 import xarray as xr
 
-from agrifoodpy_data.land import UKCEH_LC_1000 as LC, ALC_1000 as ALC
+from agrifoodpy_data.land import UKCEH_LC_1000 as LC, NaturalEngland_ALC_1000 as ALC
 
 from agrifoodpy.land.land import LandDataArray
 from agrifoodpy.land.model import land_sequestration

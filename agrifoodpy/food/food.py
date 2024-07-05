@@ -220,7 +220,6 @@ class FoodBalanceSheet(XarrayAccessorBase):
         dif = fbs[element_in].fillna(0) - out[element_in].fillna(0)
 
         for elmnt, add_el, elast in zip(element_out, add, elasticity):
-            print(elmnt, add_el, elast, np.where(add_el, -1, 1))
             out[elmnt] = out[elmnt] + np.where(add_el, -1, 1)*dif*elast
         
         return out
