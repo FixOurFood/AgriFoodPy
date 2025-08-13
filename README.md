@@ -9,6 +9,10 @@ including food consumption paterns, environmental impact and emissions data,
 population and land use. It also provides an interface to run external models by
 using xarray as the data container.
 
+AgriFoodPy also provides a pipeline manager to build end-to-end simulations and
+analysis toolchains. Modules can also be executed in standalone mode, which
+does not require a pipeline to be defined.
+
 In addition to this package, we have also pre-packaged some datasets for use
 with agrifood. These can be found on the agrifoodpy_data repository
 https://github.com/FixOurFood/agrifoodpy-data
@@ -36,69 +40,46 @@ pip install git+https://github.com/FixOurFood/agrifoodpy-data.git@importable
 
 ## Usage:
 
-Each of the four basic modules on AgriFoodPy (Food, Land, Impact, Population)
-has its own set of basic array manipulation functionality, a set of
-modelling methods to extract basic metrics from datasets, and interfaces with
-external modelling packages and code.
+AgriFoodPy modules can be used to manipulate food system data in standalone mode
+or by constructing a pipeline of modules which can be executed partially or
+completely. 
 
-Agrifoodpy employs _xarray_ accesors to provide additional functionality on top
-of the array manipulation provided by xarray.
 
-Basic usage of the accesors depend on the type of array being manipulated.
-The following examples uses the **food** module with the importable UK data
-mentioned above: 
-
+To build a pipeline
 ```python
-# import the FoodBalanceSheet accessor and FAOSTAT from agrifoodpy_data
-from agrifoodpy.food.food import FoodBalanceSheet
-from agrifoodpy_data.food import FAOSTAT
+from agrifoodpy.pipeline import Pipeline
+from agrifoodpy.utils.load_dataset import load_dataset
+from agrifoodpy.food.model import 
 import matplotlib.pyplot as plt
 
-# Extract data for the UK (Region=229)
-food_uk = FAOSTAT.sel(Region=229)
+# Create pipeline object
+fs = Pipeline()
 
-# Compute the Self-sufficiency ratio using the fbs accessor SSR function
-SSR = food_uk.fbs.SSR(per_item=True)
+# Add node to load food balance sheet data from external module.
+fs.add_node(load_dataset,
+            {
+                "datablock_path": "food",
+                "module": "agrifoodpy_data.food",
+                "data_attr": "FAOSTAT",
+                "coords": {"Year":np.arange(1990, 2010), "Region":229}
+            })
 
-# Plot the results using the fbs accessor plot_years function
-SSR.fbs.plot_years()
-plt.show()
+
+# Add node convert scale Food Balance Sheet by a constant
+fs.add_node(fbs_convert,
+            {
+                "fbs":"food",
+                "convertion_arr":1e-6 # From 1000 Tonnes to kg
+            })
+
+fs.run()
+
+results = fs.datablock
 ```
-
-To use the specific models and interfaces to external code, these need to be
-imported
-
-```python
-# import the FoodBalanceSheet accessor and FAOSTAT from agrifoodpy_data
-from agrifoodpy.food.food import FoodBalanceSheet
-from agrifoodpy_data.food import FAOSTAT
-import agrifoodpy.food.model as food_model
-import matplotlib.pyplot as plt
-
-# Extract data for the UK in 2020 (Region=229, Year=2020)
-food_uk = FAOSTAT.sel(Region=229, Year=2020)
-
-# Scale consumption of meat to 50%, 
-food_uk_scaled = food_model.balanced_scaling(food_uk,
-                                            items=2731,
-                                            element="food",
-                                            origin="production",
-                                            scale=0.5,
-                                            constant=True)
-
-# Plot bar summary of resultant food quantities
-food_uk_scaled.fbs.plot_bars(elements=["production","imports"],
-                            inverted_elements=["exports","food"])
-plt.show()
-```
-
-In he future, we plan to implement a pipeline manager to automatize certain
-aspects of the agrifood execution, and to simulate a comprehensive model where
-all aspects of the food system are considered simultaneously.
 
 ## Examples and documentation
 
-[Examples](https://agrifoodpy.readthedocs.io/en/latest/examples/index.html#modules)
+[Examples](https://agrifoodpy.readthedocs.io/en/latest/examples/index.html)
 demonstrating the functionality of AgriFoodPy can be the found in the
 [package documentation](https://agrifoodpy.readthedocs.io/en/latest/).
 These include the use of accessors to manipulate data and access to basic
