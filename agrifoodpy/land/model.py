@@ -3,7 +3,7 @@
 """
 
 import numpy as np
-from agrifoodpy.land.land import LandDataArray
+from ..land.land import LandDataArray
 
 def land_sequestration(land_da, use_id, fraction, max_seq, years=None,
                        growth_timescale=10, growth="linear", ha_per_pixel=1):

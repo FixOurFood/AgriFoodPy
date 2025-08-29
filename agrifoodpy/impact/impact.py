@@ -3,7 +3,7 @@
 
 import numpy as np
 import xarray as xr
-from agrifoodpy.array_accessor import XarrayAccessorBase
+from ..array_accessor import XarrayAccessorBase
 
 def impact(items, regions, quantities, datasets=None, long_format=True):
     """Impact style dataset constructor

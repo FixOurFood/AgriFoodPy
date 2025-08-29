@@ -3,146 +3,324 @@
 
 import xarray as xr
 import numpy as np
-# from .food_supply import FoodBalanceSheet
 import warnings
+import copy
+from ..pipeline import standalone
+from ..utils.dict_utils import get_dict, set_dict, item_parser
 
-def balanced_scaling(fbs, items, scale, element, year=None, adoption=None, 
-                     timescale=10, origin=None, constant=False,
-                     fallback=None):
-    """Scale items quantities across multiple elements in a FoodBalanceSheet
-    Dataset 
+@standalone(input_keys=["fbs"], return_keys=["out_key"])
+def balanced_scaling(
+    fbs,
+    scale,
+    element,
+    items=None,
+    constant=False,
+    origin=None,
+    add_to_origin=True,
+    elasticity=None,
+    fallback=None,
+    add_to_fallback=True,
+    datablock=None,
+    out_key=None
+):
+    """ Scales items in a Food Balance Sheet, while optionally maintaining total
+    quantities 
     
-    Scales selected item quantities on a food balance sheet and with the
-    posibility to keep the sum of selected elements constant.
-    Optionally, produce an Dataset with a sequence of quantities over the years
-    following a smooth scaling according to the selected functional form.
-
-    The elements used to supply the modified quantities can be selected to keep
-    a balanced food balance sheet.
+    Scales selected item quantities on a Food Balance Sheet, with the option
+    to keep the sum over an element DataArray constant.
+    Changes can be propagated to a set of origin FBS elements according to an
+    elasticity parameter.
 
     Parameters
     ----------
     fbs : xarray.Dataset
-        Input food balance sheet Dataset.
-    items : list
-        List of items to scale in the food balance sheet.
+        Input food balance sheet Dataset
     element : string
-        Name of the DataArray to scale.
+        Name of the DataArray to scale
     scale : float
-        Scaling parameter after full adoption.
-    year : int, optional
-        Year of the Food Balance Sheet to use. If not set, the last year of the 
-        array is used
-    adoption : string, optional
-        Shape of the scaling adoption curve. "logistic" uses a logistic model
-        for a slow-fast-slow adoption. "linear" uses a constant slope adoption
-        during the the "timescale period"
-    timescale : int, optional
-        Timescale for the scaling to be applied completely.  If "year" +
-        "timescale" is greater than the last year in the array, it is extended
-        to accomodate the extra years.
-    origin : string, optional
-        Name of the DataArray which will be used to balance the food balance
-        sheets. Any change to the "element" DataArray will be reflected in this
-        DataArray.
+        Scaling parameter after full adoption
+    items : list, optional
+        List of items to scaled in the food balance sheet. If None, all items
+        are scaled and 'constant' is ignored
     constant : bool, optional
         If set to True, the sum of element remains constant by scaling the non
-        selected items accordingly.
-    fallback : string, optional
-        Name of the DataArray used to provide the excess required to balance the
-        food balance sheet in case the "origin" falls below zero.
+        selected items accordingly
+    origin : string, list, optional
+        Names of the DataArrays which will be used as source for the quantity
+        changes. Any change to the "element" DataArray will be reflected in this
+        DataArray
+    add_to_origin : bool, array, optional
+        Whether to add or subtract the difference from the respective origins
+    elasticity : float, array, optional
+        Relative fraction of the total difference to be assigned to each origin
+        element. Values are not normalized.
+    fallback : string
+        Name of the DataArray to use as fallback in case the origin quantities
+        fall below zero
+    add_to_fallback : bool, optional
+        Whether to add or subtract the difference below zero in the origin
+        DataArray to the fallback array.  
+    out_key : string, tuple
+        Output datablock path to write results to. If not given, input path is
+        overwritten
+    datablock : dict, optional
+        Dictionary containing data
+    
+    Returns
+    -------
+    data : xarray.Dataarray
+        Food balance sheet Dataset with scaled values.
+    """
+
+    # Pepare inputs
+    data = copy.deepcopy(get_dict(datablock, fbs))
+    out = copy.deepcopy(data)
+
+    if out_key is None:
+        out_key = fbs
+
+    if items is None:
+        scaled_items = data.Item.values
+        constant = False
+    else:
+        scaled_items = item_parser(data, items)
+
+    if origin is not None and np.isscalar(origin):
+        origin = [origin]
+
+        if np.isscalar(add_to_origin):
+            add_to_origin = [add_to_origin]*len(origin)
+
+        if elasticity is None:
+            elasticity = [1/len(origin)]*len(origin)
+
+    # Scale input
+    if origin is None:
+        out = out.fbs.scale_element(
+            element=element,
+            scale=scale,
+            items=scaled_items
+        )
+
+    else:
+        out = out.fbs.scale_add(
+            element_in=element,
+            element_out=origin,
+            scale=scale,
+            items=scaled_items,
+            add=add_to_origin,
+            elasticity=elasticity
+        )
+
+    # If quantities are set to be constant
+    if constant:
+
+        delta = out[element] - data[element]
+        
+        # Identify non selected items and scaling
+        non_sel_items = np.setdiff1d(data.Item.values, scaled_items)
+        non_sel_scale = (data.sel(Item=non_sel_items)[element].sum(dim="Item")
+                         - delta.sum(dim="Item")) \
+                        / data.sel(Item=non_sel_items)[element].sum(dim="Item")
+        
+        # Make sure no scaling occurs on inf and nan
+        non_sel_scale = non_sel_scale.where(np.isfinite(non_sel_scale)).fillna(1.0)
+
+        if origin is None:
+            out = out.fbs.scale_element(
+                element=element,
+                scale=non_sel_scale,
+                items=non_sel_items
+            )
+
+        else:
+            out = out.fbs.scale_add(
+                element_in=element,
+                element_out=origin,
+                scale=non_sel_scale,
+                items=non_sel_items,
+                add=add_to_origin,
+                elasticity=elasticity
+            )
+
+    # If a fallback DataArray is defined, transfer the excess negative
+    # quantities to it
+    if fallback is not None:
+        for orig in origin:
+            dif = out[orig].where(out[orig]<0).fillna(0)
+            out[fallback] -= np.where(add_to_fallback, 1, -1)*dif
+            out[orig] = out[orig].where(out[orig] > 0, 0)
+
+    set_dict(datablock, out_key, out)
+
+    return datablock  
+
+
+@standalone(input_keys=["fbs", "convertion_arr"], return_keys=["out_key"])
+def fbs_convert(
+    fbs,
+    convertion_arr,
+    out_key=None,
+    datablock=None
+):
+    """Scales quantities in a food balance sheet using a conversion
+    dataarray, dataset, or scaling factor.
+    
+    Parameters
+    ----------
+    datablock : Dict
+        Dictionary containing data.
+    dataset : str, xarray.Dataset
+        Datablock paths to the food balance sheet datasets or the datasets
+        themselves.
+    convertion_arr : str, xarray.DataArray, tuple or float
+        Datablock path to the conversion array, datablock-key tuple, or the
+        array or float itself.
+    keys : str, list
+        Datablock key of the resulting dataset to be stored in the datablock.
+
+    Returns
+    -------
+    dict or xarray.Dataset
+        - Updated datablock if  a datablock is provided.
+        - xarray.Dataset with converted quantities if no datablock is provided.
+    """
+
+    # Retrieve target array
+    data = get_dict(datablock, fbs)
+
+    # retrieve convertion array
+    if isinstance(convertion_arr, xr.DataArray):
+        convertion_arr = convertion_arr.where(np.isfinite(convertion_arr), other=0)
+    else:
+        convertion_arr = get_dict(datablock, convertion_arr)
+
+    # If no output key is provided, overwrite original dataset
+    if out_key is None:
+        out_key = fbs
+
+    out = data*convertion_arr
+    set_dict(datablock, out_key, out)
+
+    return datablock
+
+@standalone(["fbs"], ["out_key"])
+def SSR(
+    fbs,
+    items=None,
+    per_item=False,
+    production="production",
+    imports="imports",
+    exports="exports",
+    out_key=None,
+    datablock=None,
+):
+    """Self-sufficiency ratio
+
+    Self-sufficiency ratio (SSR) or ratios for a list of item imports,
+    exports and production quantities.
+
+    Parameters
+    ----------
+    fbs : xarray.Dataset
+        Input Dataset containing an "Item" coordinate and, optionally, a
+        "Year" coordinate.
+    items : list, optional
+        list of items to compute the SSR for from the food Dataset. If no
+        list is provided, the SSR is computed for all items.
+    per_item : bool, optional
+        Whether to return an SSR for each item separately. Default is false
+    production : string, optional
+        Name of the DataArray containing the production data
+    imports : string, optional
+        Name of the DataArray containing the imports data
+    exports : string, optional
+        Name of the DataArray containing the exports data
+    datablock : dict, optional
+        Dictionary containing the food balance sheet Dataset.
 
     Returns
     -------
     data : xarray.Dataarray
-        Food balance sheet Dataset with scaled "food" values.
+        Self-sufficiency ratio or ratios for the list of items, one for each
+        year of the input food Dataset "Year" coordinate.
+
     """
 
-    # Check for single item inputs
-    if np.isscalar(items):
-        items = [items]
+    fbs = get_dict(datablock, fbs)
 
-    # Check for single item list fbs
-    input_item_list = fbs.Item.values
-    if np.isscalar(input_item_list):
-        input_item_list = [input_item_list]
-        if constant:
-            warnings.warn("Constant set to true but input only has a single item.")
-            constant = False
+    if items is not None:
+        if np.isscalar(items):
+            items = [items]
+        fbs = fbs.sel(Item=items)
 
-    # If no items are provided, we scale all of them.
-    if items is None or np.sort(items) is np.sort(input_item_list):
-        items = fbs.Item.values
-        if constant:
-            warnings.warn("Cannot keep food constant when scaling all items.")
-            constant = False
+    domestic_use = fbs[production] + fbs[imports] - fbs[exports]
 
-    # Define Dataarray to use as pivot
-    if "Year" in fbs.dims:
-        if year is None:
-            if np.isscalar(fbs.Year.values):
-                year = fbs.Year.values
-                fbs_toscale = fbs
-            else:
-                year = fbs.Year.values[-1]
-                fbs_toscale = fbs.isel(Year=-1)
-        else:
-            fbs_toscale = fbs.sel(Year=year)
-
+    if per_item:
+        ssr = fbs[production] / domestic_use
     else:
-        fbs_toscale = fbs
-        try:
-            year = fbs.Year.values
-        except AttributeError:
-            year=0
+        ssr = fbs[production].sum(dim="Item") / domestic_use.sum(dim="Item")
 
-    # Define scale array based on year range
-    if adoption is not None:
-        if adoption == "linear":
-            from agrifoodpy.utils.scaling import linear_scale as scale_func
-        elif adoption == "logistic":
-            from agrifoodpy.utils.scaling import logistic_scale as scale_func
-        else:
-            raise ValueError("Adoption must be one of 'linear' or 'logistic'")
+    set_dict(datablock, out_key, ssr)
+
+    return datablock
+
+@standalone(["fbs"], ["out_key"])
+def IDR(
+    fbs,
+    items=None,
+    per_item=False,
+    imports="imports",
+    production="production",
+    exports="exports",
+    out_key=None,
+    datablock=None,
+):
+    """Import-dependency ratio
+
+    Import-ependency ratio (IDR) or ratios for a list of item imports,
+    exports and production quantities.
+
+    Parameters
+    ----------
+    fbs : xarray.Dataset
+        Input Dataset containing an "Item" coordinate and, optionally, a
+        "Year" coordinate.
+    items : list, optional
+        list of items to compute the IDR for from the food Dataset. If no
+        list is provided, the IDR is computed for all items.
+    per_item : bool, optional
+        Whether to return an IDR for each item separately. Default is false.
+    imports : string, optional
+        Name of the DataArray containing the imports data
+    exports : string, optional
+        Name of the DataArray containing the exports data
+    production : string, optional
+        Name of the DataArray containing the production data
+    datablock : dict, optional
+        Dictionary containing the food balance sheet Dataset.   
         
-        scale_arr = scale_func(year, year, year+timescale-1, year+timescale-1,
-                               c_init=1, c_end = scale)
-        
-        fbs_toscale = fbs_toscale * xr.ones_like(scale_arr)
-    
+    Returns
+    -------
+    data : xarray.Datarray
+        Import-dependency ratio or ratios for the list of items, one for
+        each year of the input food Dataset "Year" coordinate.
+    """
+
+    fbs = get_dict(datablock, fbs)
+
+    if items is not None:
+        if np.isscalar(items):
+            items = [items]
+        fbs = fbs.sel(Item=items)
+
+    domestic_use = fbs[production] + fbs[imports] - fbs[exports]
+
+    if per_item:
+        idr = fbs["imports"] / domestic_use
     else:
-        scale_arr = scale
+        idr = fbs["imports"].sum(dim="Item") / domestic_use.sum(dim="Item")
 
-    # Create a deep copy to modify and return
-    out = fbs_toscale.copy(deep=True)
-    osplit = origin.split("-")[-1]
-    
-    out = out.fbs.scale_add(element, osplit, scale_arr, items, 
-                            add = origin.startswith("-"))
-    
+    set_dict(datablock, out_key, idr)
 
-    if constant:
-
-        delta = out[element] - fbs_toscale[element]
-
-        # Scale non selected items
-        non_sel_items = np.setdiff1d(fbs_toscale.Item.values, items)
-        non_sel_scale = (fbs_toscale.sel(Item=non_sel_items)[element].sum(dim="Item") - delta.sum(dim="Item")) / fbs_toscale.sel(Item=non_sel_items)[element].sum(dim="Item")
-        
-        # Make sure inf and nan values are not scaled
-        non_sel_scale = non_sel_scale.where(np.isfinite(non_sel_scale)).fillna(1.0)
-
-        if np.any(non_sel_scale < 0):
-            warnings.warn("Additional consumption cannot be compensated by \
-                        reduction of non-selected items")
-        
-        out = out.fbs.scale_add(element, osplit, non_sel_scale,
-                        non_sel_items, add = origin.startswith("-"))
-
-        # If fallback is defined, adjust to prevent negative values
-        if fallback is not None:
-            df = out[osplit].where(out[osplit] < 0).fillna(0)
-            out[fallback.split("-")[-1]] -= np.where(fallback.startswith("-"), 1, -1)*df
-            out[osplit] = out[osplit].where(out[osplit] > 0, 0)
-
-    return out
+    return datablock

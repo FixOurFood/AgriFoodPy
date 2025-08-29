@@ -101,3 +101,58 @@ def test_datablock_write():
     assert(pipeline.datablock['a']['b']['d'] == 20)
     assert(pipeline.datablock['a']['e'] == 30)
     assert(pipeline.datablock['f'] == 40)
+
+def test_standalone_decorator():
+
+    from agrifoodpy.pipeline.pipeline import Pipeline, standalone
+
+    test_datablock = {'x': 5, 'y': 10}
+
+    # Test decorated function with single input key
+    @standalone(['x'], ['out_key'])
+    def double_numbers_decorated(x, out_key, datablock=None):
+        datablock[out_key] = datablock[x]*2
+        return datablock
+    
+    result_double = double_numbers_decorated(5)
+    assert result_double == 10
+
+    # Test decorated function with multiple input keys
+    @standalone(['x', 'y'], ['out_key'])
+    def sum_numbers_decorated(x, y, out_key, datablock=None):
+        datablock[out_key] = datablock[x] + datablock[y]
+        return datablock
+    
+    result_sum = sum_numbers_decorated(5, 10)
+    assert result_sum == 15
+
+    # Test decorated function with no input keys
+    @standalone([], ['out_key'])
+    def return_constant_decorated(out_key, datablock=None):
+        datablock[out_key] = 42
+        return datablock    
+    
+    result_constant = return_constant_decorated()
+    assert result_constant == 42
+
+    # Test decorated function with multiple return keys
+    @standalone(['x'], ['out_key1', 'out_key2'])
+    def multiple_returns_decorated(x, out_key1, out_key2, datablock=None):
+        datablock[out_key1] = datablock[x] * 2
+        datablock[out_key2] = datablock[x] + 10
+        return datablock
+    
+    result_multiple = multiple_returns_decorated(5)
+    assert result_multiple[0] == 10
+    assert result_multiple[1] == 15
+
+    # Test decorated function inside a pipeline
+    pipeline = Pipeline(test_datablock)
+    @standalone(['x'], ['out_key'])
+    def pipeline_decorated(x, out_key, datablock=None):
+        datablock[out_key] = datablock[x] * 3
+        return datablock
+    
+    pipeline.add_node(pipeline_decorated, params={'x': 'x', 'out_key': 'result'})
+    pipeline.run()
+    assert pipeline.datablock['result'] == 15

@@ -114,7 +114,7 @@ class Pipeline():
             node_time = node_end_time - node_start_time
 
             if timing:
-                print(f"Node {i + 1} ({self.names[i]}) executed in {node_time:.4f} seconds.")
+                print(f"Node {i + 1}: {self.names[i]}, executed in {node_time:.4f} seconds.")
 
         pipeline_end_time = time.time()
         pipeline_time = pipeline_end_time - pipeline_start_time
@@ -132,9 +132,9 @@ def standalone(input_keys, return_keys):
 
     Parameters
     ----------
-    key_list: list of strings
+    input_keys: list of strings
         List of dataset keys to be added to the temporary datablock
-    return_list: list of strings
+    return_keys: list of strings
         List of keys to datablock datasets to be returned by the decorated
         function.
 
@@ -174,7 +174,12 @@ def standalone(input_keys, return_keys):
                 for key in input_keys:
                     if kwargs.get(key, None) is not None:
                         kwargs[key] = key
-            
+
+                # Fill return keys if they are not passed or are None
+                for key in return_keys:
+                    if kwargs.get(key, None) is None:
+                        kwargs[key] = key
+
             result = test_func(**kwargs)
 
             # return tuple of results
@@ -182,7 +187,7 @@ def standalone(input_keys, return_keys):
                 if len(return_keys) == 1:
                     return result[kwargs[return_keys[0]]]
                 else:
-                    return tuple(kwargs[result[key]] for key in return_keys)
+                    return tuple(result[key] for key in return_keys)
 
             return result
         return wrapper

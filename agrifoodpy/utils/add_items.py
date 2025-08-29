@@ -2,12 +2,18 @@ import xarray as xr
 import numpy as np
 import copy
 
-from agrifoodpy.pipeline import standalone
-from agrifoodpy.pipeline.utils import get_dict_path, set_dict_path
-from agrifoodpy.food import food
+from ..pipeline import standalone
+from ..utils.dict_utils import get_dict, set_dict
+from ..food import food
 
 @standalone(["dataset"], ["dataset"])
-def add_items(dataset, items, values=None, copy_from=None, datablock=None):
+def add_items(
+    dataset,
+    items,
+    values=None,
+    copy_from=None,
+    datablock=None
+):
     """Adds a list of items to a selected dataset in the datablock and
     initializes their values.
 
@@ -46,7 +52,7 @@ def add_items(dataset, items, values=None, copy_from=None, datablock=None):
         items_src = {}
 
     # Add new items to the datasets
-    data = get_dict_path(datablock, dataset)
+    data = get_dict(datablock, dataset)
 
     data = data.fbs.add_items(new_items, copy_from=copy_from)
     for key, val in items_src.items():
@@ -58,6 +64,6 @@ def add_items(dataset, items, values=None, copy_from=None, datablock=None):
     elif copy_from is None:
         data.loc[{"Item":new_items}] = 0
     
-    datablock = set_dict_path(datablock, dataset, data)
+    set_dict(datablock, dataset, data)
 
     return datablock

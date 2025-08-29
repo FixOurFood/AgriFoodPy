@@ -56,13 +56,18 @@ broadleaf_max_seq = 5.7
 coniferous_max_seq = 14
 broadleaf_fraction = 0.5
 
-seq_forest= broadleaf_max_seq * (broadleaf_fraction) + \
+seq_forest = broadleaf_max_seq * (broadleaf_fraction) + \
                      coniferous_max_seq * (1-broadleaf_fraction)
 
-co2e_seq = land_sequestration(land_use, [1,2], max_seq=seq_forest,
-                     fraction=[0.0, pasture_4_5/total_area_england*0.5],
-                     years = np.arange(2020,2070),
-                     growth_timescale=25)
+# We can now compute the additional carbon sequestration from reforesting
+co2e_seq = land_sequestration(
+    land_da=land_use,
+    use_id=[1,2],
+    max_seq=seq_forest,
+    fraction=[0.0, pasture_4_5/total_area_england*0.5],
+    years = np.arange(2020,2070),
+    growth_timescale=25
+    )
 
 ax = co2e_seq.fbs.plot_years()
 ax.set_ylabel("[t CO2 / yr]")

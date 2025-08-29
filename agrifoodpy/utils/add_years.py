@@ -1,10 +1,17 @@
-from agrifoodpy.pipeline import standalone
-from agrifoodpy.impact.impact import Impact
+from ..pipeline import standalone
+from ..impact.impact import Impact
+from ..food.food import FoodBalanceSheet
+from .dict_utils import get_dict, set_dict
 
 @standalone(["dataset"], ["dataset"])
-def extend_years(dataset, years, projection='empty', datablock=None):
+def add_years(
+    dataset,
+    years,
+    projection='empty',
+    datablock=None
+):
     """
-    Extends the dimensions of a dataset.
+    Extends the Year coordinates of a dataset.
     
     Parameters
     ----------
@@ -21,9 +28,10 @@ def extend_years(dataset, years, projection='empty', datablock=None):
         the new year using a scaling of the last year of the array
     """
 
-    data = datablock[dataset].copy(deep=True)
+    data = get_dict(datablock, dataset)
 
     data = data.fbs.add_years(years, projection)
 
-    datablock[dataset] = data 
-    return dataset
+    set_dict(datablock, dataset, data)
+
+    return datablock

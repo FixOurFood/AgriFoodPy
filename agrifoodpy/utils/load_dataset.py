@@ -2,27 +2,30 @@ import numpy as np
 import xarray as xr
 import importlib
 
-from agrifoodpy.pipeline import standalone
+from ..pipeline import standalone
 
-def import_dataset(module_name, dataset_name):
+def _import_dataset(module_name, dataset_name):
     module = importlib.import_module(module_name)
     dataset = getattr(module, dataset_name)
     return dataset
 
 @standalone([], ['datablock_path'])
-def load_dataset(datablock_path="data", path=None, module=None,
-                    data_attr=None, da=None, coords=None, scale=1.,
-                    datablock=None):
-    """Loads a dataset to the specified datablock dictionary. Can only be used
-    in pipeline mode.
+def load_dataset(
+    datablock_path,
+    path=None,
+    module=None,
+    data_attr=None,
+    da=None,
+    coords=None,
+    scale=1.,
+    datablock=None
+):
+    """Loads a dataset to the specified datablock dictionary.
 
     Parameters
     ----------
     datablock : dict
-        The datablock dictionary where the dataset is stored, containing all
-        the model parameters
-    datablock_path : str
-        The path to the datablock where the dataset is stored.
+        The datablock path where the dataset is stored
     path : str
         The path to the dataset stored in a netCDF file.
     module : str
@@ -34,7 +37,9 @@ def load_dataset(datablock_path="data", path=None, module=None,
     coords : dict
         Dictionary containing the coordinates of the dataset to be loaded.
     scale : float
-        Optional scale factor to be applied to the dataset on load.
+        Optional multiplicative factor to be applied to the dataset on load.
+    datablock_path : str
+        The path to the datablock where the dataset is stored.
 
     """
 
@@ -50,7 +55,7 @@ def load_dataset(datablock_path="data", path=None, module=None,
 
     # Load dataset from module
     elif module is not None and data_attr is not None:
-        dataset = import_dataset(module, data_attr)
+        dataset = _import_dataset(module, data_attr)
 
     # Select dataarray and coords from dataset
     if da is not None:

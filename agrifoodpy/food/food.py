@@ -13,7 +13,7 @@ import xarray as xr
 import copy
 import warnings
 
-from agrifoodpy.array_accessor import XarrayAccessorBase
+from ..array_accessor import XarrayAccessorBase
 
 import matplotlib.pyplot as plt
 
@@ -127,9 +127,14 @@ def FoodSupply(items, years, quantities, regions=None, elements=None,
 @xr.register_dataset_accessor("fbs")
 class FoodBalanceSheet(XarrayAccessorBase):
 
-    def scale_element(self, element, scale, items=None):
-        """Scales list of items from an element in a food balance sheet like
-        DataSet.
+    def scale_element(
+        self,
+        element,
+        scale,
+        items=None
+    ):
+        """Scales list of items from an element in a Food Balance Sheet like
+        Dataset.
 
         Parameters
         ----------
@@ -172,8 +177,16 @@ class FoodBalanceSheet(XarrayAccessorBase):
 
         return out
 
-    def scale_add(self, element_in, element_out, scale, items=None, add=True,
-                  elasticity=None):
+    def scale_add(
+        self,
+        element_in,
+        element_out,
+        scale,
+        items=None,
+        add=True,
+        elasticity=None
+        ):
+        
         """Scales item quantities of an element and adds the difference to
         another element DataArray
         
@@ -327,8 +340,16 @@ class FoodBalanceSheet(XarrayAccessorBase):
 
         return fbs["imports"].sum(dim="Item") / domestic_use.sum(dim="Item")
 
-    def plot_bars(self, show="Item", elements=None, inverted_elements=None,
-                  ax=None, colors=None, labels=None, **kwargs):
+    def plot_bars(
+            self,
+            show="Item",
+            elements=None,
+            inverted_elements=None,
+            ax=None,
+            colors=None,
+            labels=None,
+            **kwargs
+            ):
         """Plot total quantities per element on a horizontal bar plot
 
         Produces a horizontal bar plot with a bar per element on the vertical
@@ -479,8 +500,15 @@ class FoodBalanceSheet(XarrayAccessorBase):
 @xr.register_dataarray_accessor("fbs")
 class FoodElementSheet(XarrayAccessorBase):
         
-    def plot_years(self, show=None, stack=True,ax=None, colors=None,
-                   labels=None, **kwargs):
+    def plot_years(
+            self,
+            show=None,
+            stack=True,
+            ax=None,
+            colors=None,
+            labels=None,
+            **kwargs
+        ):
         """ Fill plot with quantities at each year value
 
         Produces a vertical fill plot with quantities for each year on the
