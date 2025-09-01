@@ -6,7 +6,14 @@ import xarray as xr
 
 from ..array_accessor import XarrayAccessorBase
 
-def population(years, regions, quantities, datasets=None, long_format=True):
+
+def population(
+    years,
+    regions,
+    quantities,
+    datasets=None,
+    long_format=True
+):
     """Population style dataset constructor
 
     Parameters
@@ -42,15 +49,15 @@ def population(years, regions, quantities, datasets=None, long_format=True):
     # Identify unique values in coordinates
     _years = np.unique(years)
     _regions = np.unique(regions)
-    coords = {"Year" : _years,
-              "Region" : _regions}
+    coords = {"Year": _years,
+              "Region": _regions}
 
     # find positions in output array to organize data
     ii = [np.searchsorted(_years, years), np.searchsorted(_regions, regions)]
     size = (len(_years), len(_regions))
 
     # Create empty dataset
-    data = xr.Dataset(coords = coords)
+    data = xr.Dataset(coords=coords)
 
     if long_format:
         # dataset, quantities
@@ -94,6 +101,7 @@ def population(years, regions, quantities, datasets=None, long_format=True):
             data[dataset] = (coords, values)
 
     return data
+
 
 @xr.register_dataarray_accessor("pop")
 class PopulationDataArray(XarrayAccessorBase):

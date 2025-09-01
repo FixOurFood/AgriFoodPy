@@ -1,8 +1,9 @@
 import numpy as np
 import xarray as xr
 
-from agrifoodpy.utils.load_dataset import load_dataset
+from agrifoodpy.utils.nodes import load_dataset
 import os
+
 
 def test_load_dataset():
 
@@ -11,7 +12,7 @@ def test_load_dataset():
     data = np.reshape(np.arange(np.prod(shape)), shape)
 
     expected_ds = xr.Dataset({"data": (("Item", "X", "Y"), data)},
-                    coords={"Item": items, "X": [0, 1], "Y": [0, 1]})
+                             coords={"Item": items, "X": [0, 1], "Y": [0, 1]})
 
     script_dir = os.path.dirname(__file__)
     test_data_path = os.path.join(script_dir, "data/test_dataset.nc")
@@ -36,4 +37,3 @@ def test_load_dataset():
     scaled_ds = load_dataset(path=test_data_path, scale=2.0)
     expected_scaled_data = expected_ds * 2.0
     assert scaled_ds.equals(expected_scaled_data)
-

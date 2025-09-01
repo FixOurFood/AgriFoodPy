@@ -9,6 +9,7 @@ from functools import wraps
 from inspect import signature
 import time
 
+
 class Pipeline():
     '''Class for constructing and running pipelines of functions with
     individual sets of parameters.'''
@@ -36,7 +37,7 @@ class Pipeline():
             The pipeline object.
         """
         raise NotImplementedError("This method is not yet implemented.")
-    
+
     def datablock_write(self, path, value):
         """Writes a single value to the datablock at the specified path.
 
@@ -52,7 +53,7 @@ class Pipeline():
         for key in path[:-1]:
             current = current.setdefault(key, {})
         current[path[-1]] = value
-    
+
     def add_node(self, node, params={}, name=None):
         """Adds a node to the pipeline, including its function and execution
         parameters.
@@ -65,7 +66,7 @@ class Pipeline():
             The parameters to be passed to the node function.
         name : str, optional
             The name of the node. If not provided, a generic name will be
-            assigned.            
+            assigned.
         """
 
         # Copy the parameters to avoid modifying the original dictionaries
@@ -114,7 +115,8 @@ class Pipeline():
             node_time = node_end_time - node_start_time
 
             if timing:
-                print(f"Node {i + 1}: {self.names[i]}, executed in {node_time:.4f} seconds.")
+                print(f"Node {i + 1}: {self.names[i]}, \
+                      executed in {node_time:.4f} seconds.")
 
         pipeline_end_time = time.time()
         pipeline_time = pipeline_end_time - pipeline_start_time
@@ -122,13 +124,14 @@ class Pipeline():
         if timing:
             print(f"Pipeline executed in {pipeline_time:.4f} seconds.")
 
+
 def standalone(input_keys, return_keys):
     """ Decorator to make a pipeline node available as a standalone function
 
     If datablock is not passed as a kwarg, and datasets are passed directly
-    instead of datablock keys, a temporary datablock is created and the datasets
-    associated with the arguments in input_keys are added to it. The function
-    then returns the specified datasets in return_keys.
+    instead of datablock keys, a temporary datablock is created and the
+    datasets associated with the arguments in input_keys are added to it.
+    The function then returns the specified datasets in return_keys.
 
     Parameters
     ----------
@@ -143,7 +146,7 @@ def standalone(input_keys, return_keys):
 
     wrapper: function
         The decorated function
-    
+
     """
     def pipeline_decorator(test_func):
         @wraps(test_func)
@@ -153,23 +156,26 @@ def standalone(input_keys, return_keys):
             func_sig = signature(test_func)
             func_params = func_sig.parameters
 
-            kwargs.update({key: arg for key, arg in zip(func_params.keys(), args)})
+            kwargs.update({key: arg for key, arg in zip(func_params.keys(),
+                                                        args)})
 
-            # Make sure that the datablock is passed as a kwarg, if not, create it
+            # Make sure the datablock is passed as a kwarg, if not, create it
             datablock = kwargs.get("datablock", None)
 
             # Fill in missing arguments with their default values
             for key, param in func_params.items():
                 if key not in kwargs:
-                    if param.default is not param.empty:  # Check if there's a default value
+                    # Check if there is a default value
+                    if param.default is not param.empty:
                         kwargs[key] = param.default
 
             standalone = datablock is None
             if standalone:
                 # Create datablock
-                datablock = {key: kwargs[key] for key in kwargs if key in input_keys}
+                datablock = {key: kwargs[key]
+                             for key in kwargs if key in input_keys}
                 kwargs["datablock"] = datablock
-                
+
                 # Create list of keys for passed arguments only
                 for key in input_keys:
                     if kwargs.get(key, None) is not None:

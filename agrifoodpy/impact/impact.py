@@ -5,7 +5,14 @@ import numpy as np
 import xarray as xr
 from ..array_accessor import XarrayAccessorBase
 
-def impact(items, regions, quantities, datasets=None, long_format=True):
+
+def impact(
+    items,
+    regions,
+    quantities,
+    datasets=None,
+    long_format=True
+):
     """Impact style dataset constructor
 
     Parameters
@@ -41,15 +48,15 @@ def impact(items, regions, quantities, datasets=None, long_format=True):
     _items = np.unique(items)
     _regions = np.unique(regions)
 
-    coords = {"Item" : _items,
-              "Region" : _regions}
+    coords = {"Item": _items,
+              "Region": _regions}
 
     # find positions in output array to organize data
     ii = [np.searchsorted(_items, items), np.searchsorted(_regions, regions)]
     size = (len(_items), len(_regions))
 
     # Create empty dataset
-    data = xr.Dataset(coords = coords)
+    data = xr.Dataset(coords=coords)
 
     if long_format:
         ndims = 2
@@ -89,6 +96,7 @@ def impact(items, regions, quantities, datasets=None, long_format=True):
 
     return data
 
+
 @xr.register_dataset_accessor("impact")
 class Impact(XarrayAccessorBase):
 
@@ -98,8 +106,8 @@ class Impact(XarrayAccessorBase):
 
     @staticmethod
     def _validate(obj):
-        """Check that the Impact object is an xarray.DataArray or xarray.Dataset
-        """
+        """Check that the Impact object is an xarray.DataArray or xarray.
+        Dataset"""
         if not isinstance(obj, xr.Dataset):
             raise TypeError("Food Balance Sheet must be an xarray.DataSet")
 
@@ -111,10 +119,10 @@ class Impact(XarrayAccessorBase):
         impact: xarray.DataSet
             xarray dataset including a list of items and impacts
         matching_matrix: pandas dataframe
-            Defines how items are matched from the input to the output datasets,
-            with the values of the matrix indicating the scaling of the
-            impact quantities. Column names indicate the original item list, while
-            row names indicate the new item list
+            Defines how items are matched from the input to the output
+            datasets, with the values of the matrix indicating the scaling of
+            the impact quantities. Column names indicate the original item
+            list, while row names indicate the new item list
 
         Returns
         -------
@@ -132,20 +140,20 @@ class Impact(XarrayAccessorBase):
         # First column is the item code column
         in_items_mat = matching_matrix.columns[1:]
 
-        assert np.equal(in_items, in_items_mat).all() , \
+        assert np.equal(in_items, in_items_mat).all(), \
             "Input items do not match assignment matrix"
 
         # Again, we avoid first column
         mat = matching_matrix.iloc[:, 1:].fillna(0).to_numpy()
 
         dataset_out = xr.Dataset(
-            coords = dict(
+            coords=dict(
                 Item=("Item", out_items),
             )
         )
 
         for var in list(impact.keys()):
             data_out = np.matmul(mat, impact[var].values)
-            dataset_out = dataset_out.assign({var:("Item", data_out)})
+            dataset_out = dataset_out.assign({var: ("Item", data_out)})
 
         return dataset_out

@@ -1,9 +1,10 @@
 import numpy as np
 import xarray as xr
 
+
 def test_print_datablock():
 
-    from agrifoodpy.utils.print_datablock import print_datablock
+    from agrifoodpy.utils.nodes import print_datablock
 
     items = ["Beef", "Apples", "Poultry"]
 
@@ -41,13 +42,17 @@ def test_print_datablock():
     datablock = print_datablock(datablock, 'test_array')
 
     # Test printing an attribute of the xarray Dataset
-    datablock = print_datablock(datablock, 'test_xarray', attr='data_vars')
+    datablock = print_datablock(datablock, 'test_xarray',
+                                attr='data_vars')
 
     # Test calling a method on the xarray Dataset
-    datablock = print_datablock(datablock, 'test_xarray', method='mean', args=[('X', 'Y')])
+    datablock = print_datablock(datablock, 'test_xarray',
+                                method='mean', args=[('X', 'Y')])
 
     # Test calling a method with keyword arguments
-    datablock = print_datablock(datablock, 'test_xarray', method='sel', kwargs={'Item': 'Beef'})
+    datablock = print_datablock(datablock, 'test_xarray',
+                                method='sel', kwargs={'Item': 'Beef'})
 
     # Test error handling for non-existent attribute
-    datablock = print_datablock(datablock, 'test_xarray', attr='non_existent_attr')
+    datablock = print_datablock(datablock, 'test_xarray',
+                                attr='non_existent_attr')

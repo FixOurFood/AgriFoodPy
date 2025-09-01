@@ -1,9 +1,10 @@
 import numpy as np
 
+
 def test_copy_datablock():
 
     from agrifoodpy.pipeline import Pipeline
-    from agrifoodpy.utils.copy_datablock import copy_datablock
+    from agrifoodpy.utils.nodes import copy_datablock
 
     datablock = {
         'test_dataset': {
@@ -33,4 +34,3 @@ def test_copy_datablock():
         pipeline.datablock['copied_dataset']['fbs']['data'],
         datablock['test_dataset']['fbs']['data']
     )
-

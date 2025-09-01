@@ -3,10 +3,10 @@
 
 import xarray as xr
 import numpy as np
-import warnings
 import copy
 from ..pipeline import standalone
 from ..utils.dict_utils import get_dict, set_dict, item_parser
+
 
 @standalone(input_keys=["fbs"], return_keys=["out_key"])
 def balanced_scaling(
@@ -20,12 +20,12 @@ def balanced_scaling(
     elasticity=None,
     fallback=None,
     add_to_fallback=True,
-    datablock=None,
-    out_key=None
+    out_key=None,
+    datablock=None
 ):
-    """ Scales items in a Food Balance Sheet, while optionally maintaining total
-    quantities 
-    
+    """ Scales items in a Food Balance Sheet, while optionally maintaining
+    total quantities
+
     Scales selected item quantities on a Food Balance Sheet, with the option
     to keep the sum over an element DataArray constant.
     Changes can be propagated to a set of origin FBS elements according to an
@@ -35,10 +35,10 @@ def balanced_scaling(
     ----------
     fbs : xarray.Dataset
         Input food balance sheet Dataset
-    element : string
-        Name of the DataArray to scale
     scale : float
         Scaling parameter after full adoption
+    element : string
+        Name of the DataArray to scale
     items : list, optional
         List of items to scaled in the food balance sheet. If None, all items
         are scaled and 'constant' is ignored
@@ -47,8 +47,8 @@ def balanced_scaling(
         selected items accordingly
     origin : string, list, optional
         Names of the DataArrays which will be used as source for the quantity
-        changes. Any change to the "element" DataArray will be reflected in this
-        DataArray
+        changes. Any change to the "element" DataArray will be reflected in
+        this DataArray
     add_to_origin : bool, array, optional
         Whether to add or subtract the difference from the respective origins
     elasticity : float, array, optional
@@ -59,13 +59,13 @@ def balanced_scaling(
         fall below zero
     add_to_fallback : bool, optional
         Whether to add or subtract the difference below zero in the origin
-        DataArray to the fallback array.  
+        DataArray to the fallback array.
     out_key : string, tuple
         Output datablock path to write results to. If not given, input path is
         overwritten
     datablock : dict, optional
         Dictionary containing data
-    
+
     Returns
     -------
     data : xarray.Dataarray
@@ -116,15 +116,16 @@ def balanced_scaling(
     if constant:
 
         delta = out[element] - data[element]
-        
+
         # Identify non selected items and scaling
         non_sel_items = np.setdiff1d(data.Item.values, scaled_items)
         non_sel_scale = (data.sel(Item=non_sel_items)[element].sum(dim="Item")
                          - delta.sum(dim="Item")) \
-                        / data.sel(Item=non_sel_items)[element].sum(dim="Item")
-        
+            / data.sel(Item=non_sel_items)[element].sum(dim="Item")
+
         # Make sure no scaling occurs on inf and nan
-        non_sel_scale = non_sel_scale.where(np.isfinite(non_sel_scale)).fillna(1.0)
+        non_sel_scale = non_sel_scale.where(
+            np.isfinite(non_sel_scale)).fillna(1.0)
 
         if origin is None:
             out = out.fbs.scale_element(
@@ -147,13 +148,13 @@ def balanced_scaling(
     # quantities to it
     if fallback is not None:
         for orig in origin:
-            dif = out[orig].where(out[orig]<0).fillna(0)
+            dif = out[orig].where(out[orig] < 0).fillna(0)
             out[fallback] -= np.where(add_to_fallback, 1, -1)*dif
             out[orig] = out[orig].where(out[orig] > 0, 0)
 
     set_dict(datablock, out_key, out)
 
-    return datablock  
+    return datablock
 
 
 @standalone(input_keys=["fbs", "convertion_arr"], return_keys=["out_key"])
@@ -165,19 +166,19 @@ def fbs_convert(
 ):
     """Scales quantities in a food balance sheet using a conversion
     dataarray, dataset, or scaling factor.
-    
+
     Parameters
     ----------
-    datablock : Dict
-        Dictionary containing data.
-    dataset : str, xarray.Dataset
+    fbs : str, xarray.Dataset
         Datablock paths to the food balance sheet datasets or the datasets
         themselves.
     convertion_arr : str, xarray.DataArray, tuple or float
         Datablock path to the conversion array, datablock-key tuple, or the
         array or float itself.
-    keys : str, list
+    out_key : str, list
         Datablock key of the resulting dataset to be stored in the datablock.
+    datablock : Dict
+        Dictionary containing data.
 
     Returns
     -------
@@ -191,7 +192,8 @@ def fbs_convert(
 
     # retrieve convertion array
     if isinstance(convertion_arr, xr.DataArray):
-        convertion_arr = convertion_arr.where(np.isfinite(convertion_arr), other=0)
+        convertion_arr = convertion_arr.where(
+            np.isfinite(convertion_arr), other=0)
     else:
         convertion_arr = get_dict(datablock, convertion_arr)
 
@@ -203,6 +205,7 @@ def fbs_convert(
     set_dict(datablock, out_key, out)
 
     return datablock
+
 
 @standalone(["fbs"], ["out_key"])
 def SSR(
@@ -265,6 +268,7 @@ def SSR(
 
     return datablock
 
+
 @standalone(["fbs"], ["out_key"])
 def IDR(
     fbs,
@@ -298,8 +302,8 @@ def IDR(
     production : string, optional
         Name of the DataArray containing the production data
     datablock : dict, optional
-        Dictionary containing the food balance sheet Dataset.   
-        
+        Dictionary containing the food balance sheet Dataset.
+
     Returns
     -------
     data : xarray.Datarray

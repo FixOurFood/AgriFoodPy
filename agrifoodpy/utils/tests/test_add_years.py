@@ -1,9 +1,10 @@
 import numpy as np
 import xarray as xr
 
+
 def test_add_items():
-    
-    from agrifoodpy.utils.add_years import add_years
+
+    from agrifoodpy.utils.nodes import add_years
 
     items = ["Beef", "Apples", "Poultry"]
     years = [2010, 2011, 2012]
@@ -13,7 +14,7 @@ def test_add_items():
 
     ds = xr.Dataset({"data": (("Item", "Year"), data)},
                     coords={"Item": items, "Year": years})
-    
+
     # Test basic functionality
     new_years = [2013, 2014]
     result_add = add_years(ds, new_years)
@@ -28,7 +29,7 @@ def test_add_items():
     for year in new_years:
         assert np.array_equal(result_constant["data"].sel(Year=year).values,
                               ds.data.isel(Year=-1).values)
-        
+
     # Test projection mode with float array
     scaling_factors = np.array([1.0, 2.0])
     result_scaled = add_years(ds, new_years, projection=scaling_factors)

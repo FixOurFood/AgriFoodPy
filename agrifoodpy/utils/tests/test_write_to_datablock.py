@@ -1,8 +1,8 @@
 def test_write_to_datablock():
-    from agrifoodpy.utils.write_to_datablock import write_to_datablock
+    from agrifoodpy.utils.nodes import write_to_datablock
 
     datablock_basic = {}
-    
+
     # Basic write to the datablock
     write_to_datablock(datablock_basic, "test_key", "test_value")
     assert datablock_basic["test_key"] == "test_value"
@@ -29,6 +29,6 @@ def test_write_to_datablock():
             key="test_key",
             value="new_value",
             overwrite=False)
-        
+
     except KeyError as e:
         assert str(e) == "'Key already exists in datablock and overwrite is set to False.'"

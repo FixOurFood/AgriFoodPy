@@ -2,6 +2,7 @@
 
 import numpy as np
 
+
 def item_parser(fbs, items):
     """Extracts a list of items from a dataset using a coordinate-key tuple,
     or converts a scalar item to a list
@@ -27,16 +28,17 @@ def item_parser(fbs, items):
         return None
 
     if isinstance(items, tuple):
-        items = fbs.sel(Item = fbs[items[0]].isin(items[1])).Item.values
+        items = fbs.sel(Item=fbs[items[0]].isin(items[1])).Item.values
     elif np.isscalar(items):
         items = [items]
 
     return items
 
+
 def get_dict(datablock, keys):
-    """Returns an element from a dictionary using a key or tuple of keys used to
-    describe a path of keys
-    
+    """Returns an element from a dictionary using a key or tuple of keys used
+    to describe a path of keys
+
     Parameters
     ----------
 
@@ -45,7 +47,7 @@ def get_dict(datablock, keys):
     keys : str or tuple
         Dictionary key, or tuple of keys
     """
-    
+
     if isinstance(keys, tuple):
         out = datablock
         for key in keys:
@@ -55,10 +57,11 @@ def get_dict(datablock, keys):
 
     return out
 
+
 def set_dict(datablock, keys, object, create_missing=True):
     """Sets an element in a dictionary using a key or tuple of keys used to
     describe a path of keys
-    
+
     Parameters
     ----------
 
@@ -76,7 +79,7 @@ def set_dict(datablock, keys, object, create_missing=True):
     KeyError
         If a key in the path does not exist and create_missing is False.
     """
-    
+
     if isinstance(keys, tuple):
         out = datablock
         for key in keys[:-1]:

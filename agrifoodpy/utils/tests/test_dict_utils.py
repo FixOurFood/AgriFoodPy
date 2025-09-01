@@ -5,17 +5,17 @@ import xarray as xr
 def test_item_parser():
 
     from agrifoodpy.utils.dict_utils import item_parser
-    
     items = ["Beef", "Apples", "Poultry"]
+
     item_origin = ["Animal", "Vegetal", "Animal"]
 
     data = np.random.rand(3, 2, 2)
 
     fbs = xr.Dataset({"data": (("Item", "X", "Y"), data)},
-                    coords={"Item": items, "X": [0, 1], "Y": [0, 1]})
-    fbs = fbs.assign_coords({"Item_origin":("Item", item_origin)})
-    
+                     coords={"Item": items, "X": [0, 1], "Y": [0, 1]})
+    fbs = fbs.assign_coords({"Item_origin": ("Item", item_origin)})
     # Test case for item_parser with None input
+
     items = item_parser(fbs, None)
     assert items is None
 
@@ -26,6 +26,7 @@ def test_item_parser():
     # Tesct case for item_parser with scalar input
     items = item_parser(fbs, "Beef")
     assert np.array_equal(items, ["Beef"])
+
 
 def test_get_dict():
 
@@ -47,6 +48,7 @@ def test_get_dict():
     # Test case for get_dict with a tuple of keys
     value = get_dict(datablock, ("key1", "key2", "key3"))
     assert value == "value"
+
 
 def test_set_dict():
 
@@ -75,7 +77,7 @@ def test_set_dict():
 
     # Test case for set_dict with create_missing=False
     try:
-        set_dict(datablock, ("key7", "key8"), "should_fail", create_missing=False)
+        set_dict(datablock, ("key7", "key8"), "should_fail",
+                 create_missing=False)
     except KeyError:
         pass
-    

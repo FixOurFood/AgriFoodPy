@@ -3,10 +3,10 @@
 
 import numpy as np
 import xarray as xr
-import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import colors as mcolors
 import matplotlib.patches as mpatches
+
 
 @xr.register_dataarray_accessor("land")
 class LandDataArray:
@@ -16,19 +16,19 @@ class LandDataArray:
 
     @staticmethod
     def _validate(obj):
-        """Validate land xarray, checking it is a DataSet and has the minimum set
-        of coordinates
+        """Validate land xarray, checking it is a DataSet and has the minimum
+        set of coordinates
         """
         if not isinstance(obj, xr.DataArray):
             raise TypeError("Land array must be an xarray.Dataarray")
-    
+
         if "x" not in obj.dims or "y" not in obj.dims:
             raise AttributeError("Land array must have 'x' and 'y' dimensions")
 
     def plot(self, ax=None, class_coord=None, colors=None, labels=None,
              **kwargs):
         """Plot a LandDataArray
-        
+
         Generates a plot of a LandDataArray using matplotlib imshow, without
         interpolation and setting the origin low to align north at the top.
         If a dominant classification map type is provided, the plot will be
@@ -46,12 +46,12 @@ class LandDataArray:
             Dictionary of colors to use for each land class. If not provided,
             the default matplotlib colour map is used.
         labels : list of strings
-            Dictionary of labels to use for each land class. If not provided and
-            the map is a class percentage map, the coordinate values are used
-            as labels.
+            Dictionary of labels to use for each land class. If not provided
+            and the map is a class percentage map, the coordinate values are
+            used as labels.
         **kwargs : dict
             Style options to be passed to the imshow function.
-        
+
         Returns
         -------
         ax : matplotlib axes instance
@@ -62,7 +62,7 @@ class LandDataArray:
         if ax is None:
             f, ax = plt.subplots()
 
-        # Check the map type by checking if there are any additional coordinates
+        # Check the map type by checking for additional coordinates
         extra_coords = [dim for dim in map.dims if dim not in ["x", "y"]]
         if len(extra_coords) >= 1:
             if labels is None:
@@ -89,32 +89,40 @@ class LandDataArray:
         ymin, ymax = map.y.values[[0, -1]]
 
         ax.imshow(map, interpolation="none", origin="lower",
-                  extent=[xmin-dx_low, xmax+dx_high, ymin-dy_low, ymax+dy_high],
+                  extent=[xmin-dx_low,
+                          xmax+dx_high,
+                          ymin-dy_low,
+                          ymax+dy_high],
                   cmap=cmap, norm=norm)
-        
+
         patches = [mpatches.Patch(color=colors[i],
-                                  label=labels[i]) for i in np.arange(len(labels))]
-        
+                                  label=labels[i])
+                   for i in np.arange(len(labels))]
+
         ax.legend(handles=patches, loc="best")
-        
+
         return ax
-        
-    def area_by_type(self, values = None, dim = None):
+
+    def area_by_type(
+        self,
+        values=None,
+        dim=None
+    ):
         """Area per map category in a LandDataArray
-        
-        Returns a DataArray with the total number of pixels for each category or
-        category subset of the LandDataArray. 
+
+        Returns a DataArray with the total number of pixels for each category
+        or category subset of the LandDataArray.
 
         Parameters
         ----------
         values : int, array
-            List of category types to return the total area for. If not set, the
-            function returns areas for all values found on the map, excluding
-            nan values.
+            List of category types to return the total area for. If not set,
+            the function returns areas for all values found on the map,
+            excluding nan values.
         dim : string
             Name to assign to the categories coordinate. If not set, the input
             DataArray name is used instead.
-        
+
         Returns
         -------
         xarray.DataArray
@@ -136,17 +144,25 @@ class LandDataArray:
         # Prevent nan values from being counted
         nan_indices = np.isnan(values)
         values = values[~nan_indices]
-        area = [ones.where(map==value).sum() for value in values]
-        
-        area_arr = xr.DataArray(area, dims=dim, coords={dim:values})
+        area = [ones.where(map == value).sum() for value in values]
+
+        area_arr = xr.DataArray(area, dims=dim, coords={dim: values})
 
         return area_arr
 
-    def area_overlap(self, map_right, values_left = None, values_right = None, dim_left=None, dim_right=None):
+    def area_overlap(
+        self,
+        map_right,
+        values_left=None,
+        values_right=None,
+        dim_left=None,
+        dim_right=None
+    ):
         """Area overlap of selected categories between two maps
-        
-        Returns a DataArray with the total number of pixels for each combination
-        of categories from the left and right map selected categories. Casa
+
+        Returns a DataArray with the total number of pixels for each
+        combination of categories from the left and right map selected
+        categories.
 
         Parameters
         ----------
@@ -161,12 +177,14 @@ class LandDataArray:
             overlaps for.
             If not set, all category types are used, except nan values.
         dim_left : string
-            Names to assign to the category coordinates on the output DataArray.
+            Names to assign to the category coordinates on the output
+            DataArray.
             If not set, the input DataArray name is used instead.
         dim_right : string
-            Names to assign to the category coordinates on the output DataArray.
+            Names to assign to the category coordinates on the output
+            DataArray.
             If not set, the input DataArray name is used instead.
-        
+
         Returns
         -------
         area_arr : xarray.DataArray
@@ -175,8 +193,8 @@ class LandDataArray:
         """
         map_left = self._obj
 
-        # Check that both maps have the same dimensions and coordinates. if not,
-        # this raises a ValueError (alternatively, align the maps and use )
+        # Check that both maps have the same dimensions and coordinates.
+        # Otherwise, this raises a ValueError
         xr.align(map_left, map_right, join='exact')
 
         if dim_left is None:
@@ -203,14 +221,23 @@ class LandDataArray:
         values_right = values_right[~nan_indices_right]
 
         ones = xr.ones_like(map_left)
-        area = [[ones.where(map_left==vl).where(map_right==vr).sum().values for vr in values_right] for vl in values_left]
+        area = [[ones.where(map_left == vl).where(map_right == vr).sum().values
+                 for vr in values_right] for vl in values_left]
 
-        area_arr = xr.DataArray(area, dims=[dim_left, dim_right], coords={dim_left:values_left, dim_right:values_right})
+        area_arr = xr.DataArray(area,
+                                dims=[dim_left, dim_right],
+                                coords={dim_left: values_left,
+                                        dim_right: values_right})
 
         return area_arr
-    
-    def category_match(self, map_right, values_left=None, values_right=None,
-                       join="left"):
+
+    def category_match(
+        self,
+        map_right,
+        values_left=None,
+        values_right=None,
+        join="left"
+    ):
         """Returns a land Dataarray with values where a selected overlap occurs
         between categories from two maps. This returns the values from the left
         map where coincidence occurs between the left and right map.
@@ -225,7 +252,7 @@ class LandDataArray:
         values_right : int, array
             List of category types from the right map to match.
             If not set, all category types are used, except nan values.
-                
+
         Returns
         -------
         category_match : xarray.DataArray
@@ -257,8 +284,13 @@ class LandDataArray:
 
         return category_match
 
-    def dominant_class(self, class_coord=None, return_index=False):
-        """Returns a land DataArray with the dominant land class for each pixel.
+    def dominant_class(
+        self,
+        class_coord=None,
+        return_index=False
+    ):
+        """Returns a land DataArray with the dominant land class for each
+        pixel.
 
         Parameters
         ----------
@@ -282,7 +314,7 @@ class LandDataArray:
 
         if return_index:
             len_class = len(map[class_coord].values)
-            map = map.assign_coords({class_coord:np.arange(len_class)})
+            map = map.assign_coords({class_coord: np.arange(len_class)})
 
         map = map.idxmax(dim=class_coord, skipna=True)
 
