@@ -2,10 +2,9 @@
 ===================================================
 Plot emissions from different item groups and years
 ===================================================
-
-This example demonstrates how manipulate a Food Balance Sheet array, add
+This example demonstrates how to manipulate a Food Balance Sheet array, add
 items and years to it and combine it with impact data to plot total GHG
-emissions dissagregated by selected coordinates. 
+emissions dissagregated by a selected coordinate. 
 
 Two datasets are imported from the agrifoodpy_data package:
 
@@ -24,16 +23,16 @@ from agrifoodpy.impact.model import fbs_impacts
 
 from matplotlib import pyplot as plt
 
-# Load FAOSTAT array to memory.
-FAOSTAT.load();
-
 # Select food items and production values for the UK and the US
 # Values are in [1000 Tonnes]
-country_codes = [229, 231]
+UK_FAO_CODE = 229
+US_FAO_CODE = 231
+
+country_codes = [UK_FAO_CODE, US_FAO_CODE]
 food = FAOSTAT.sel(Region=country_codes)["production"]
 
 # Convert emissions from [g CO2e] to [Gt CO2e]
-ghg_emissions = PN18["GHG Emissions"] / 1e6
+ghg_emissions = PN18["GHG Emissions (IPCC 2013)"] / 1e6
 food_emissions = fbs_impacts(food, ghg_emissions)
 
 ax = food_emissions.fbs.plot_years(show="Region", labels=["UK", "USA"])

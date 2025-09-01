@@ -1,6 +1,6 @@
 import numpy as np
 import xarray as xr
-from agrifoodpy.array_accessor import XarrayAccessorBase
+from ..array_accessor import XarrayAccessorBase
 
 def test_add_years():
 
