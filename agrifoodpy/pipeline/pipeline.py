@@ -79,7 +79,7 @@ class Pipeline():
         self.nodes.append(node)
         self.params.append(params)
 
-    def run(self, from_node=0, to_node=None, timing=False):
+    def run(self, from_node=0, to_node=None, skip=None, timing=False):
         """Runs the pipeline
 
         Parameters
@@ -90,6 +90,9 @@ class Pipeline():
         to_node : int, optional
             The index of the last node to be executed. If not provided, all
             nodes will be executed
+        
+        skip : list of int, optional
+            List of node indices to skip during execution. Defaults to None.
 
         timing : bool, optional
             If True, the execution time of each node will be printed. Defaults
@@ -103,6 +106,12 @@ class Pipeline():
 
         # Execute the node functions within the specified range
         for i in range(from_node, to_node):
+
+            if skip is not None and i in skip:
+                if timing:
+                    print(f"Node {i + 1}: {self.names[i]}, skipped.")
+                continue
+
             node = self.nodes[i]
             params = self.params[i]
 
