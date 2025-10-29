@@ -68,6 +68,29 @@ def test_run_nodes_separately():
     pipeline.run(from_node=1)
     assert(pipeline.datablock['result1'] == 20)
 
+def test_run_with_skip():
+    pipeline = Pipeline()
+    def node1(datablock, param1):
+        datablock['result1'] = param1
+        return datablock
+
+    def node2(datablock, param2):
+        datablock['result2'] = param2
+        return datablock
+
+    def node3(datablock, param3):
+        datablock['result3'] = param3
+        return datablock
+
+    pipeline.add_node(node1, params={'param1': 10})
+    pipeline.add_node(node2, params={'param2': 20})
+    pipeline.add_node(node3, params={'param3': 30})
+
+    pipeline.run(skip=[1])
+    assert(pipeline.datablock['result1'] == 10)
+    assert('result2' not in pipeline.datablock)
+    assert(pipeline.datablock['result3'] == 30)
+
 def test_standalone_decorator():
     pipeline = Pipeline()
     @standalone([], ['output1'])
