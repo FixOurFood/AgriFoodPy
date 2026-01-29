@@ -8,11 +8,35 @@ def test_add_node():
     def dummy_node(datablock, param1):
         datablock['result'] = param1
         return datablock
-
+    
+    # Test simple node addition
     pipeline.add_node(dummy_node, params={'param1': 10}, name='Test Node')
     assert(len(pipeline.nodes) == 1)
     assert(pipeline.names[0] == 'Test Node')
     assert(pipeline.params[0] == {'param1': 10})
+
+    # Test adding node at index
+    pipeline.add_node(dummy_node, params={'param1': 20}, name='Test Node 2',
+                      index=0)
+    assert(len(pipeline.nodes) == 2)
+    assert(pipeline.names[0] == 'Test Node 2')
+    assert(pipeline.params[0] == {'param1': 20})
+
+    # Test removing a node by index
+    pipeline.add_node(dummy_node, params={'param1': 30}, name='Test Node 3')
+    assert(len(pipeline.nodes) == 3)
+    assert(pipeline.names[2] == 'Test Node 3')
+    assert(pipeline.params[2] == {'param1': 30})
+
+    pipeline.remove_node(2)
+    assert(len(pipeline.nodes) == 2)
+    assert(pipeline.names[-1] == 'Test Node')
+    assert(pipeline.params[-1] == {'param1': 10})
+
+    # Test removing a node by name
+    pipeline.remove_node("Test Node 2")
+    assert(pipeline.names[-1] == 'Test Node')
+    assert(pipeline.params[-1] == {'param1': 10})
 
 def test_run_pipeline():
     pipeline = Pipeline()

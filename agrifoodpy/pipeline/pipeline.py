@@ -54,7 +54,7 @@ class Pipeline():
             current = current.setdefault(key, {})
         current[path[-1]] = value
 
-    def add_node(self, node, params={}, name=None):
+    def add_node(self, node, params={}, name=None, index=None):
         """Adds a node to the pipeline, including its function and execution
         parameters.
 
@@ -67,6 +67,9 @@ class Pipeline():
         name : str, optional
             The name of the node. If not provided, a generic name will be
             assigned.
+        index : int, optional
+            Index of the enw node. If None, the new node is appended at the
+            end of the node list.
         """
 
         # Copy the parameters to avoid modifying the original dictionaries
@@ -75,9 +78,49 @@ class Pipeline():
         if name is None:
             name = "Node {}".format(len(self.nodes) + 1)
 
-        self.names.append(name)
-        self.nodes.append(node)
-        self.params.append(params)
+        if index is None:
+            self.names.append(name)
+            self.nodes.append(node)
+            self.params.append(params)
+
+        else:
+            self.names.insert(index, name)
+            self.nodes.insert(index, node)
+            self.params.insert(index, params)
+
+    def remove_node(self, node):
+        """Remove a node from the pipeline by index or name.
+
+        Parameters
+        ----------
+        node : int or str
+            Index of the node to remove, or its name.
+        """
+        # Resolve index
+        if isinstance(node, int):
+            index = node
+            if index < 0 or index >= len(self.nodes):
+                raise IndexError(f"Node index {index} out of range.")
+
+        elif isinstance(node, str):
+            matches = [i for i, name in enumerate(self.names) if name == node]
+            if not matches:
+                raise ValueError(f"No node found with name '{node}'.")
+            if len(matches) > 1:
+                raise ValueError(
+                    f"Multiple nodes found with name '{node}'. "
+                    "Please remove by index instead."
+                )
+            index = matches[0]
+
+        else:
+            raise TypeError("node must be an int (index) or str (name).")
+
+        # Remove from all internal lists
+        del self.nodes[index]
+        del self.params[index]
+        del self.names[index]
+
 
     def run(self, from_node=0, to_node=None, skip=None, timing=False):
         """Runs the pipeline
@@ -133,6 +176,27 @@ class Pipeline():
         if timing:
             print(f"Pipeline executed in {pipeline_time:.4f} seconds.")
 
+    def print_nodes(self, show_params=True):
+        """Prints the list of nodes associated with a Pipeline instance.
+        
+        Parameters
+        ----------
+        show_params : bool, optional
+            If True, displays the parameters associated with each node.
+        """
+
+
+        if not self.nodes:
+            print("Pipeline is empty.")
+            return
+        
+        print("Pipeline nodes:")
+        for i, (name, node, params) in enumerate(zip(self.names, self.nodes, self.params)):
+            node_name = getattr(node, "__name__", repr(node))
+            print(f"[{i}] {name}: {node_name}")
+            if show_params and params:
+                for k, v in params.items():
+                    print(f"    {k} = {v}")
 
 def standalone(input_keys, return_keys):
     """ Decorator to make a pipeline node available as a standalone function
