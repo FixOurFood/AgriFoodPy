@@ -79,14 +79,11 @@ class Pipeline():
             name = "Node {}".format(len(self.nodes) + 1)
 
         if index is None:
-            self.names.append(name)
-            self.nodes.append(node)
-            self.params.append(params)
+            index = len(self.nodes)
 
-        else:
-            self.names.insert(index, name)
-            self.nodes.insert(index, node)
-            self.params.insert(index, params)
+        self.names.insert(index, name)
+        self.nodes.insert(index, node)
+        self.params.insert(index, params)
 
     def remove_node(self, node):
         """Remove a node from the pipeline by index or name.
