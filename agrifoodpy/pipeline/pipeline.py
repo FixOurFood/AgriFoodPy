@@ -8,11 +8,14 @@ import copy
 from functools import wraps
 from inspect import signature
 import time
+import yaml
+import importlib
 
 
 class Pipeline():
     '''Class for constructing and running pipelines of functions with
     individual sets of parameters.'''
+
     def __init__(self, datablock=None):
         self.nodes = []
         self.params = []
@@ -22,9 +25,16 @@ class Pipeline():
         else:
             self.datablock = {}
 
+    @staticmethod
+    def _load_function(path):
+        """Load a function from a dotted path."""
+        module_path, func_name = path.rsplit(".", 1)
+        module = importlib.import_module(module_path)
+        return getattr(module, func_name)
+
     @classmethod
     def read(cls, filename):
-        """Read a pipeline from a configuration file
+        """Read a pipeline configuration from a YAML file
 
         Parameters
         ----------
@@ -36,7 +46,22 @@ class Pipeline():
         pipeline : Pipeline
             The pipeline object.
         """
-        raise NotImplementedError("This method is not yet implemented.")
+
+        with open(filename, "r") as f:
+            config = yaml.safe_load(f)
+
+        pipeline = cls()
+
+        for step in config["nodes"]:
+            func = cls._load_function(step["function"])
+            params = step.get("params", {})
+            name = step.get("name", func.__name__)
+
+            pipeline.nodes.append(func)
+            pipeline.params.append(params)
+            pipeline.names.append(name)
+
+        return pipeline
 
     def datablock_write(self, path, value):
         """Writes a single value to the datablock at the specified path.
@@ -118,7 +143,6 @@ class Pipeline():
         del self.params[index]
         del self.names[index]
 
-
     def run(self, from_node=0, to_node=None, skip=None, timing=False):
         """Runs the pipeline
 
@@ -130,7 +154,7 @@ class Pipeline():
         to_node : int, optional
             The index of the last node to be executed. If not provided, all
             nodes will be executed
-        
+
         skip : list of int, optional
             List of node indices to skip during execution. Defaults to None.
 
@@ -175,18 +199,17 @@ class Pipeline():
 
     def print_nodes(self, show_params=True):
         """Prints the list of nodes associated with a Pipeline instance.
-        
+
         Parameters
         ----------
         show_params : bool, optional
             If True, displays the parameters associated with each node.
         """
 
-
         if not self.nodes:
             print("Pipeline is empty.")
             return
-        
+
         print("Pipeline nodes:")
         for i, (name, node, params) in enumerate(zip(self.names, self.nodes, self.params)):
             node_name = getattr(node, "__name__", repr(node))
@@ -194,6 +217,7 @@ class Pipeline():
             if show_params and params:
                 for k, v in params.items():
                     print(f"    {k} = {v}")
+
 
 def standalone(input_keys, return_keys):
     """ Decorator to make a pipeline node available as a standalone function
