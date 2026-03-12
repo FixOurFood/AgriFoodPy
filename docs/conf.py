@@ -36,6 +36,6 @@ extensions += ['sphinx_gallery.gen_gallery', ]
 sphinx_gallery_conf = {
     'examples_dirs': '../examples',  # path to examples scripts
     'gallery_dirs': 'examples',      # path to gallery generated examples
-    'run_stale_examples': True,
+    'run_stale_examples': False,
     'download_all_examples': False,
 }
