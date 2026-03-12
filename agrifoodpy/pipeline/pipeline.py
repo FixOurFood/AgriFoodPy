@@ -52,14 +52,15 @@ class Pipeline():
 
         pipeline = cls()
 
-        for step in config["nodes"]:
-            func = cls._load_function(step["function"])
-            params = step.get("params", {})
-            name = step.get("name", func.__name__)
+        if config is not None:
+            for step in config["nodes"]:
+                func = cls._load_function(step["function"])
+                params = step.get("params", {})
+                name = step.get("name", func.__name__)
 
-            pipeline.nodes.append(func)
-            pipeline.params.append(params)
-            pipeline.names.append(name)
+                pipeline.nodes.append(func)
+                pipeline.params.append(params)
+                pipeline.names.append(name)
 
         return pipeline
 
