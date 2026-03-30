@@ -71,13 +71,16 @@ def FoodSupply(
               "Year": _years}
 
     # find positions in output array to organize data
-    ii = [np.searchsorted(_items, items), np.searchsorted(_years, years)]
+    ii = [
+        np.atleast_1d(np.searchsorted(_items, items)),
+        np.atleast_1d(np.searchsorted(_years, years))
+    ]
     size = (len(_items), len(_years))
 
     # If regions and are provided, add the coordinate information
     if regions is not None:
         _regions = np.unique(regions)
-        ii.append(np.searchsorted(_regions, regions))
+        ii.append(np.atleast_1d(np.searchsorted(_regions, regions)))
         size = size + (len(_regions),)
         coords["Region"] = _regions
 

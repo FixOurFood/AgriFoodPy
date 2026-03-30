@@ -474,11 +474,15 @@ def test_plot_bars():
        
 def test_plot_years():
     
-    da = xr.DataArray(np.arange(15).reshape(5,3),
-                        coords=[('Year', [2010, 2011, 2012, 2013, 2014]),
-                                ('Region', ['A', 'B', 'C'])],
-                        dims=['Year', 'Region'])
-    
+    years = [2019, 2010, 2011, 2012, 2013, 2014]
+    regions = ['A', 'B', 'C']
+
+    da = xr.DataArray(
+        np.arange(len(years)*len(regions)).reshape(len(years), len(regions)),
+        coords=[('Year', years),
+                ('Region', regions)],
+        dims=['Year', 'Region'])
+
     fbs = FoodElementSheet(da)
 
     # Test default call

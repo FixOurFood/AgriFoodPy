@@ -277,8 +277,8 @@ class LandDataArray:
 
         shape = map_left.shape
 
-        left_match = np.in1d(map_left, values_left).reshape(shape)
-        right_match = np.in1d(map_right, values_right).reshape(shape)
+        left_match = np.isin(map_left, values_left).reshape(shape)
+        right_match = np.isin(map_right, values_right).reshape(shape)
 
         category_match = map_left.where(left_match).where(right_match)
 
