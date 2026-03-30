@@ -19,6 +19,7 @@ INSTALL_REQUIRES = [
     'pandas',
     'xarray',
     'matplotlib',
+    'pyyaml'
 ]
 
 setup(name=PACKAGE_NAME,
