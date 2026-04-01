@@ -414,12 +414,11 @@ def write_csv(datablock, key, path, index=True):
             obj.to_dataframe().to_csv(path, index=index)
         except ValueError:
             # Unnamed DataArrays raise a ValueError.
-
             if isinstance(key, tuple):
                 obj.name = key[-1]
             else:
                 obj.name = str(key)
-                
+
             obj.to_dataframe().to_csv(path, index=index)
 
     elif isinstance(obj, (pd.DataFrame, pd.Series)):
