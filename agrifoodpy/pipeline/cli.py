@@ -58,20 +58,24 @@ def main(args=None):
 
     args = parser.parse_args(args or ['--help'])
 
+    # read pipeline configuration and set pipeline object
     pipeline = Pipeline.read(args.config)
-
-    if args.nodes:
-        pipeline.print_nodes()
 
     from_node = args.from_node if args.from_node is not None else 0
     to_node = args.to_node if args.to_node is not None else len(pipeline.nodes)
     skip_nodes = args.skip_nodes if args.skip_nodes is not None else None
 
+    # print the nodes and parameters if requested
+    if args.nodes:
+        pipeline.print_nodes()
+
+    # run the pipeline if not skipped
     if args.no_run:
         pipeline.run(from_node=from_node, to_node=to_node, skip=skip_nodes)
 
     datablock = pipeline.datablock
 
+    # write outputs
     if args.output is not None:
         with open(args.output, "w") as f:
             json.dump(datablock, f, indent=2, default=str)

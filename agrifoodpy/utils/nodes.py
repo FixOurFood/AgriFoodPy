@@ -1,5 +1,8 @@
 import copy
+import json
+import os
 import xarray as xr
+import numpy as np
 import importlib
 
 from ..pipeline import standalone
@@ -285,5 +288,173 @@ def load_dataset(
 
     # Add dataset to datablock
     datablock[datablock_path] = dataset * scale
+
+    return datablock
+
+def _tuple_to_str(tup):
+    return ".".join(str(x) for x in tup)
+
+def write_json(datablock, key, path, indent=2):
+    """Writes a datablock value to a JSON file.
+
+    Parameters
+    ----------
+    datablock : dict
+        The datablock to read from.
+    key : str, tuple or list
+        List of datablock keys (or tuple of keys for nested access) of the
+        value to write.
+    path : str
+        Output file path.
+    indent : int, optional
+        JSON indentation level. Defaults to 2.
+
+    Returns
+    -------
+    datablock : dict
+        Unmodified datablock.
+    """
+
+    def _default(o):
+        if isinstance(o, (xr.Dataset, xr.DataArray)):
+            return o.to_dict()
+        if isinstance(o, np.ndarray):
+            return o.tolist()
+        if isinstance(o, np.integer):
+            return int(o)
+        if isinstance(o, np.floating):
+            return float(o)
+        return str(o)
+
+    if isinstance(key, str):
+        key = [key]
+    elif isinstance(key, tuple):
+        key = [key]
+
+    obj_dict = {}
+
+    for obj_key in key:
+        if isinstance(obj_key, tuple):
+            obj_dict[_tuple_to_str(obj_key)] = get_dict(datablock, obj_key)
+        else:
+            obj_dict[obj_key] = get_dict(datablock, obj_key)
+    
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+
+    with open(path, "w") as f:
+        json.dump(obj_dict, f, indent=indent, default=_default)
+
+    return datablock
+
+
+def write_netcdf(datablock, key, path):
+    """Writes a datablock xarray Dataset or DataArray to a NetCDF file.
+
+    Parameters
+    ----------
+    datablock : dict
+        The datablock to read from.
+    key : str or tuple
+        Datablock key (or tuple of keys for nested access) of the dataset to
+        write.
+    path : str
+        Output file path.
+
+    Returns
+    -------
+    datablock : dict
+        Unmodified datablock.
+    """
+
+    obj = get_dict(datablock, key)
+
+    if not isinstance(obj, (xr.Dataset, xr.DataArray)):
+        raise TypeError(
+            f"write_netcdf only supports xarray Dataset or DataArray objects. "
+            f"Got {type(obj).__name__} instead."
+        )
+
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+    obj.to_netcdf(path)
+
+    return datablock
+
+
+def write_csv(datablock, key, path, index=True):
+    """Writes a datablock value to a CSV file.
+
+    Supports xarray Dataset, xarray DataArray, pandas DataFrame and Series.
+    xarray objects are converted to a DataFrame before writing; the
+    multi-index produced by that conversion (which encodes coordinates) is
+    written when index=True.
+
+    Parameters
+    ----------
+    datablock : dict
+        The datablock to read from.
+    key : str, list or tuple
+        Datablock key (or tuple of keys for nested access) of the value to write.
+    path : str
+        Output file path.
+    index : bool, optional
+        Whether to write the row index. Defaults to True.
+
+    Returns
+    -------
+    datablock : dict
+        Unmodified datablock.
+    """
+    import pandas as pd
+
+    obj = get_dict(datablock, key)
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+
+    if isinstance(obj, (xr.Dataset, xr.DataArray)):
+        try:
+            obj.to_dataframe().to_csv(path, index=index)
+        except ValueError:
+            # Unnamed DataArrays raise a ValueError.
+
+            if isinstance(key, tuple):
+                obj.name = key[-1]
+            else:
+                obj.name = str(key)
+                
+            obj.to_dataframe().to_csv(path, index=index)
+
+    elif isinstance(obj, (pd.DataFrame, pd.Series)):
+        obj.to_csv(path, index=index)
+    else:
+        raise TypeError(
+            f"write_csv does not support objects of type {type(obj).__name__}. "
+            "Expected xr.Dataset, xr.DataArray, pd.DataFrame, or pd.Series."
+        )
+
+    return datablock
+
+
+def write_text(datablock, key, path):
+    """Writes the string representation of a datablock value to a text file.
+
+    Parameters
+    ----------
+    datablock : dict
+        The datablock to read from.
+    key : str or tuple
+        Datablock key (or tuple of keys for nested access) of the value to write.
+    path : str
+        Output file path.
+
+    Returns
+    -------
+    datablock : dict
+        Unmodified datablock.
+    """
+
+    obj = get_dict(datablock, key)
+    os.makedirs(os.path.dirname(os.path.abspath(path)), exist_ok=True)
+
+    with open(path, "w") as f:
+        f.write(str(obj))
 
     return datablock
