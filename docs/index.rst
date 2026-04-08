@@ -12,7 +12,7 @@ Welcome to agrifoodpy's documentation!
 
    install
    examples/index
-
+   config_file
    contributing
 
 .. include:: readme.md

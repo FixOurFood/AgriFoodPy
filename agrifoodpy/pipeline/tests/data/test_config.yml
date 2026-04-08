@@ -1,0 +1,6 @@
+nodes:
+  - function: agrifoodpy.utils.nodes.write_to_datablock
+    params:
+      key: test_write
+      value: 200
+    name: writing to datablock

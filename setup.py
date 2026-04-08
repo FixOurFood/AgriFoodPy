@@ -15,10 +15,11 @@ LONG_DESCRIPTION = (HERE / "README.md").read_text()
 LONG_DESC_TYPE = "text/markdown"
 
 INSTALL_REQUIRES = [
-      'numpy',
-      'pandas',
-      'xarray',
-      'matplotlib',
+    'numpy',
+    'pandas',
+    'xarray',
+    'matplotlib',
+    'pyyaml'
 ]
 
 setup(name=PACKAGE_NAME,
@@ -31,5 +32,10 @@ setup(name=PACKAGE_NAME,
       author_email=AUTHOR_EMAIL,
       url=URL,
       install_requires=INSTALL_REQUIRES,
-      packages=find_packages()
+      packages=find_packages(),
+      entry_points={
+          'console_scripts': [
+              'agrifoodpy = agrifoodpy.pipeline.cli:main',
+          ]
+      }
       )

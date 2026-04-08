@@ -1,0 +1,66 @@
+nodes:
+  - function: agrifoodpy.utils.nodes.load_dataset
+    name: "Load dataset"
+    params:
+      datablock_path: "food"
+      module: "agrifoodpy_data.food"
+      data_attr: "FAOSTAT"
+      coords: {
+            Item: [2731, 2511],
+            Year: [2019, 2020],
+            Region: 229}
+
+  - function: agrifoodpy.utils.nodes.write_to_datablock
+    name: "Add convertion factor from 1000 tonnes to kg"
+    params:
+      key: "tonnes_to_kg"
+      value: 1000000
+
+  - function: agrifoodpy.food.model.fbs_convert
+    name: "Convert fbs from 1000 tonnes to kg"
+    params:
+      fbs: "food"
+      convertion_arr: "tonnes_to_kg"
+
+  - function: agrifoodpy.food.model.SSR
+    name: "Calculate SSR"
+    params:
+      fbs: "food"
+      out_key: "SSR"
+
+  - function: agrifoodpy.food.model.IDR
+    name: "Calculate IDR"
+    params:
+      fbs: "food"
+      out_key: "IDR"
+
+  - function: agrifoodpy.utils.nodes.print_datablock
+    name: "Print SSR"
+    params:
+      key: "SSR"
+      method: "to_numpy"
+      preffix: "SSR: values "
+
+  - function: agrifoodpy.utils.nodes.add_items
+    name: "Add item names to the datablock"
+    params:
+      dataset: "food"
+      copy_from: 2731
+      items: {
+        "Item": 5000,
+        "Item_name": "Cultured meat",
+        "Item_group": "Cultured products",
+        "Item_origin": "Synthetic origin",
+      }
+
+  - function: agrifoodpy.utils.nodes.add_years
+    name: "Add years to the fbs"
+    params:
+      dataset: "food"
+      years: [2021, 2025, 2030]
+      projection: [1.1, 1.5, 10]
+
+  - function: agrifoodpy.utils.nodes.print_datablock
+    name: "Print FBS"
+    params:
+      key: "food"
