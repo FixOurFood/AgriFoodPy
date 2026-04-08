@@ -1,4 +1,4 @@
-def test_write_csv():
+def test_write_csv(tmp_path):
     from agrifoodpy.utils.nodes import write_csv
     import pandas as pd
     import xarray as xr
@@ -6,7 +6,7 @@ def test_write_csv():
     # Test unsupported type
     datablock_unsupported = {"data": set([1, 2, 3])}
     try:
-        write_csv(datablock_unsupported, key="data", path="test.csv")
+        write_csv(datablock_unsupported, key="data", path=tmp_path / "test.csv")
     except TypeError as e:
         assert str(e) == "write_csv does not support objects of type set. Expected xr.Dataset, xr.DataArray, pd.DataFrame, or pd.Series."
 
@@ -20,7 +20,7 @@ def test_write_csv():
     )
 
     datablock_df = {"data": df}
-    path = "test_df_output.csv"
+    path = tmp_path / "test_df_output.csv"
 
     write_csv(datablock_df, key="data", path=path)
 
@@ -43,7 +43,7 @@ def test_write_csv():
         )
     
     datablock_series = {"data": series}
-    path = "test_series_output.csv"
+    path = tmp_path / "test_series_output.csv"
 
     write_csv(datablock_series, key="data", path=path)
 
@@ -67,7 +67,7 @@ def test_write_csv():
     )
 
     datablock_ds = {"data": ds}
-    path = "test_ds_output.csv"
+    path = tmp_path / "test_ds_output.csv"
 
     write_csv(datablock_ds, key="data", path=path)
 
@@ -92,7 +92,7 @@ def test_write_csv():
     )
 
     datablock_da = {"data": da}
-    path = "test_da_output.csv"
+    path = tmp_path / "test_da_output.csv"
 
     write_csv(datablock_da, key="data", path=path)
 
@@ -117,7 +117,7 @@ def test_write_csv():
     )
 
     datablock_da_unnamed = {datablock_key: da_unnamed}
-    path = "test_da_unnamed_output.csv"
+    path = tmp_path / "test_da_unnamed_output.csv"
 
     write_csv(datablock_da_unnamed, key=datablock_key, path=path)
 
