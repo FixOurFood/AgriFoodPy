@@ -10,7 +10,7 @@ from inspect import signature
 import time
 import yaml
 import importlib
-
+from ..utils.dict_utils import get_dict
 
 class Pipeline():
     '''Class for constructing and running pipelines of functions with
@@ -291,5 +291,52 @@ def standalone(input_keys, return_keys):
                     return tuple(result[key] for key in return_keys)
 
             return result
+        return wrapper
+    return pipeline_decorator
+
+
+def pipeline_node(input_keys):
+    """ Decorator to make a function compatible with pipeline execution
+    
+    If a datablock is passed as a kwarg, the function will be executed in
+    pipeline mode, and the datasets associated with the arguments in
+    input_keys will be extracted from the datablock and passed to the function.
+    Unregistered keyword arguments will be passed directly to the function.
+
+    Parameters
+    ----------
+    input_keys: list of strings
+        List of dataset keys to be extracted from the datablock and passed to
+        the decorated function.
+
+    Returns
+    -------
+    wrapper: function
+        The decorated function
+    """    
+    def pipeline_decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            
+            # Identify positional arguments
+            func_sig = signature(func)
+            func_params = func_sig.parameters
+
+            kwargs.update({key: arg for key, arg in zip(func_params.keys(), args)})
+
+            # Check whether the function is being called in a pipeline or not
+            datablock = kwargs.pop("datablock", None)
+            return_key = kwargs.pop("return_key", func.__name__)
+
+            if datablock is None:
+                return func(**kwargs)
+            
+            else:
+                for key in input_keys:
+                    kwargs[key] = get_dict(datablock, kwargs[key])
+                result = func(**kwargs)
+
+                datablock[return_key] = result
+                return datablock
         return wrapper
     return pipeline_decorator
