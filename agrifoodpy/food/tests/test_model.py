@@ -30,6 +30,27 @@ def test_balanced_scaling():
 
     xr.testing.assert_equal(result_basic, fbs)
 
+    # Test without year dimension
+    fbs_no_year = fbs.isel(Year=0).drop("Year")
+
+    result_no_year = balanced_scaling(
+        fbs_no_year,
+        scale=2.0,
+        element="food"
+    )
+
+    ex_result_no_year = xr.Dataset(
+        data_vars=dict(
+            imports=(["Item"], [10., 20.]),
+            production=(["Item"], [50., 60.]),
+            exports=(["Item"], [5., 10.]),
+            food=(["Item"], [110., 140.])
+            ),
+        coords=dict(Item=("Item", items))
+    )
+
+    xr.testing.assert_equal(result_no_year, ex_result_no_year)
+
     # Test result with scalar scaling factor
     result_scalar = balanced_scaling(
         fbs,
@@ -224,7 +245,6 @@ def test_balanced_scaling():
             imports=(["Year", "Item"], [[10., 20.], [30., 40.]]),
             production=(["Year", "Item"], [[50., 60.], [70., 80.]]),
             exports=(["Year", "Item"], [[5., 10.], [15., 20.]]),
-            # food=(["Year", "Item"], [[55., 70.], [85., 100.]])
             food=(["Year", "Item"], [[55., 70.], [170., 100.]])
             ),
 
