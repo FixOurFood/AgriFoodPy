@@ -343,9 +343,10 @@ def pipeline_node(input_keys):
             func_sig = signature(func)
             try:
                 bound = func_sig.bind(*args, **kwargs)
-            except TypeError:
-                raise KeyError(f"Missing required argument for function"
-                               f"{func.__name__}.")
+            except TypeError as e:
+                raise TypeError(
+                    f"Invalid arguments for function {func.__name__}."
+                ) from e
             
             bound.apply_defaults()
 
