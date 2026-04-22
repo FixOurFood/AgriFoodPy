@@ -31,7 +31,7 @@ def test_balanced_scaling():
     xr.testing.assert_equal(result_basic, fbs)
 
     # Test without year dimension
-    fbs_no_year = fbs.isel(Year=0).drop("Year")
+    fbs_no_year = fbs.isel(Year=0).drop_vars("Year")
 
     result_no_year = balanced_scaling(
         fbs_no_year,

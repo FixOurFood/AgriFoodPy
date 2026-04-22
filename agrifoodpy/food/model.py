@@ -4,7 +4,7 @@
 import xarray as xr
 import numpy as np
 import copy
-from ..pipeline import standalone
+from ..pipeline import standalone, pipeline_node
 from ..utils.dict_utils import get_dict, set_dict, item_parser
 import warnings
 
@@ -86,13 +86,10 @@ def balanced_scaling(
     if conversion_arr is not None:
         if isinstance(conversion_arr, xr.DataArray):
             conversion_arr = conversion_arr.where(
-                np.isfinite(conversion_arr), other=0)
-            if isinstance(conversion_arr, xr.DataArray):
-                conversion_arr = conversion_arr.where(
-                np.isfinite(conversion_arr), other=0)
-                if (conversion_arr == 0).any():
-                    warnings.warn("Conversion array contains zero values," \
-                    "which can lead to inaccurate scaling")
+                np.isfinite(conversion_arr), other=1)
+            if (conversion_arr == 0).any():
+                warnings.warn("Conversion array contains zero values, "
+                "which can lead to inaccurate scaling")
         else:
             conversion_arr = get_dict(datablock, conversion_arr)
 
@@ -385,3 +382,122 @@ def IDR(
     set_dict(datablock, out_key, idr)
 
     return datablock
+
+
+@pipeline_node(["fbs", "scale", "element", "threshold", "conversion_arr"])
+def scale_above_threshold(
+    fbs,
+    scale,
+    element,
+    threshold=0,
+    items=None,
+    origin=None,
+    add_to_origin=True,
+    elasticity=None,
+    fallback=None,
+    add_to_fallback=True,
+    conversion_arr=None,
+):
+    """Scales excess item quantities in a food balance sheet above a certain
+    threshold
+    
+    Parameters
+    ----------
+    fbs : xarray.Dataset
+        Input food balance sheet Dataset
+    scale : float, xarray.DataArray
+        Scaling value or array to apply to the excess above the threshold
+    element : string
+        Name of the DataArray to scale
+    threshold : float, xarray.DataArray, optional
+        Minimum value for the scaled element. Scaling of item quantities is
+        only applied to the excess above this threshold.
+    items : list, optional
+        List of items to scaled in the food balance sheet. If None, all items
+        are scaled.
+    origin : string, list, optional
+        Names of the DataArrays which will be used as source for the quantity
+        changes. Any change to the "element" DataArray will be reflected in
+        this DataArray
+    add_to_origin : bool, array, optional
+        Whether to add or subtract the difference from the respective origins
+    elasticity : float, array, optional
+        Relative fraction of the total difference to be assigned to each origin
+        element. Values are not normalized.
+    fallback : string
+        Name of the DataArray to use as fallback in case the origin quantities
+        fall below zero
+    add_to_fallback : bool, optional
+        Whether to add or subtract the difference below zero in the origin
+        DataArray to the fallback array.
+    conversion_arr : string, xarray.DataArray, tuple or float
+        Conversion array to pre-scale quantities. If provided, the input food
+        balance sheet is first converted using the conversion array, then the
+        scaling is applied, and finally the results are converted back to the
+        original units using the inverse of the conversion array.
+    """
+
+    if conversion_arr is not None:
+        if isinstance(conversion_arr, xr.DataArray):
+            conversion_arr = conversion_arr.where(
+                np.isfinite(conversion_arr), other=1)
+            if (conversion_arr == 0).any():
+                warnings.warn("Conversion array contains zero values," \
+                "which can lead to inaccurate scaling")
+    else:
+        conversion_arr = xr.ones_like(fbs[element])
+
+    if items is not None:
+        scaled_items = item_parser(fbs, items)
+        sel = {"Item": scaled_items}
+    else:
+        scaled_items = fbs.Item.values
+        sel = {}
+
+    # Calculate the maximum scale threshold that would reduce the sum of the
+    # element to the threshold, and apply the input scale relative to this
+    max_scale_threshold = (fbs[element].sum(dim="Item") - threshold) \
+        / fbs[element].sel(sel).sum(dim="Item")
+    
+    scale_threshold = max_scale_threshold * scale
+
+    if origin is not None and np.isscalar(origin):
+        origin = [origin]
+
+        if np.isscalar(add_to_origin):
+            add_to_origin = [add_to_origin]*len(origin)
+
+        if elasticity is None:
+            elasticity = [1/len(origin)]*len(origin)
+
+    # Scale input
+    if origin is None:
+        out = fbs.fbs.scale_element(
+            element=element,
+            scale=1-scale_threshold,
+            items=scaled_items
+        )
+
+    else:
+        out = fbs.fbs.scale_add(
+            element_in=element,
+            element_out=origin,
+            scale=1-scale_threshold,
+            items=scaled_items,
+            add=add_to_origin,
+            elasticity=elasticity
+        )
+
+    # If a fallback DataArray is defined, transfer the excess negative
+    # quantities to it
+    if fallback is not None:
+        for orig in origin:
+            dif = out[orig].where(out[orig] < 0).fillna(0)
+            out[fallback] -= np.where(add_to_fallback, 1, -1)*dif
+            out[orig] = out[orig].where(out[orig] > 0, 0)
+
+    # Convert back to original units if conversion array is provided
+    conversion_arr = conversion_arr.where(conversion_arr != 0, other=1)
+    out = out/conversion_arr
+
+    return out
