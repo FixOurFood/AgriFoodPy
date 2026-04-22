@@ -283,3 +283,23 @@ def test_pipeline_node_decorator():
     assert np.mean(test_datablock_external['value1']) == 2
     assert "mean_result" in test_pipeline_external.datablock
     assert test_pipeline_external.datablock["mean_result"] == 2
+
+    # Test decorated function with reserved parameter names
+    try:
+        @pipeline_node(['x'])
+        def reserved_param_node(x, datablock=None):
+            pass
+    
+    except ValueError as e:
+        assert "reserved parameter names" in str(e)
+        assert "datablock" in str(e)
+
+
+    # Test decorated function with unknown input keys
+    try:
+        @pipeline_node(['wrong_key'])
+        def unknown_input_node(right_key):
+            pass
+
+    except ValueError as e:
+        assert "input_keys {'wrong_key'} not found in parameters" in str(e)

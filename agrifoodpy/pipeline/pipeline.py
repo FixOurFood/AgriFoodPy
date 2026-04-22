@@ -80,7 +80,7 @@ class Pipeline():
             current = current.setdefault(key, {})
         current[path[-1]] = value
 
-    def add_node(self, node, params={}, name=None, index=None):
+    def add_node(self, node, params=None, name=None, index=None):
         """Adds a node to the pipeline, including its function and execution
         parameters.
 
@@ -99,7 +99,7 @@ class Pipeline():
         """
 
         # Copy the parameters to avoid modifying the original dictionaries
-        params = copy.deepcopy(params)
+        params = copy.deepcopy(params) if params is not None else {}
 
         if name is None:
             name = "Node {}".format(len(self.nodes) + 1)
@@ -318,26 +318,45 @@ def pipeline_node(input_keys):
         The decorated function
     """
     def pipeline_decorator(func):
+        reserved = {"datablock", "return_key"}
+        if reserved & set(signature(func).parameters):
+            raise ValueError(f"Function {func.__name__} has reserved parameter"
+                             f" names {reserved & set(signature(func).parameters)}."
+                             "Please rename these parameters to use the"
+                             "pipeline_node decorator.")
+        
+        func_params = signature(func).parameters
+        unknown = set(input_keys) - set(func_params.keys())
+        if unknown:
+            raise ValueError(f"input_keys {unknown} not found in parameters "
+                              f"of '{func.__name__}'")
+        
         @wraps(func)
         def wrapper(*args, **kwargs):
-            
-            # Identify positional arguments
-            func_sig = signature(func)
-            func_params = func_sig.parameters
 
-            kwargs.update({key: arg for key, arg in zip(func_params.keys(), args)})
-
-            # Check whether the function is being called in a pipeline or not
+            # Pop wrapper-specific kwargs
             datablock = kwargs.pop("datablock", None)
             return_key = kwargs.pop("return_key", func.__name__)
 
+            # Bind positional and keyword args to their parameter names
+            func_sig = signature(func)
+            try:
+                bound = func_sig.bind(*args, **kwargs)
+            except TypeError:
+                raise KeyError(f"Missing required argument for function"
+                               f"{func.__name__}.")
+            
+            bound.apply_defaults()
+
             if datablock is None:
-                return func(**kwargs)
+                return func(*bound.args, **bound.kwargs)
             
             else:
+                pipeline_kwargs = dict(bound.arguments)
                 for key in input_keys:
-                    kwargs[key] = get_dict(datablock, kwargs[key])
-                result = func(**kwargs)
+                    pipeline_kwargs[key] = get_dict(datablock,
+                                                    pipeline_kwargs[key])
+                result = func(**pipeline_kwargs)
 
                 set_dict(datablock, return_key, result)
                 
