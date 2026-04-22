@@ -299,18 +299,19 @@ def pipeline_node(input_keys):
     """ Decorator to make a function compatible with pipeline execution
     
     If a datablock is passed as a kwarg, the function will be executed in
-    pipeline mode, and the objects associated with the arguments in
-    input_keys will be extracted from the datablock and passed to the function.
-    Unregistered keyword arguments will be passed directly to the function.
-    Decorated function take a "return_key" kwarg to specify the key under which
-    the function output will be stored in the datablock. If not provided, the
+    pipeline mode, and the values of the parameters named in input_keys will
+    be interpreted as datablock lookup keys. The corresponding objects will be
+    extracted from the datablock and passed to the function. Unregistered
+    keyword arguments will be passed directly to the function. The decorated
+    function takes a "return_key" kwarg to specify the key under which the
+    function output will be stored in the datablock. If not provided, the
     function name will be used as the return key.
 
     Parameters
     ----------
     input_keys: list of strings
-        List of dataset keys to be extracted from the datablock and passed to
-        the decorated function.
+        List of decorated function parameter names whose values will be used as
+        datablock lookup keys in pipeline mode.
 
     Returns
     -------
