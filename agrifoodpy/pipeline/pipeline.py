@@ -10,7 +10,7 @@ from inspect import signature
 import time
 import yaml
 import importlib
-
+from ..utils.dict_utils import get_dict, set_dict
 
 class Pipeline():
     '''Class for constructing and running pipelines of functions with
@@ -80,7 +80,7 @@ class Pipeline():
             current = current.setdefault(key, {})
         current[path[-1]] = value
 
-    def add_node(self, node, params={}, name=None, index=None):
+    def add_node(self, node, params=None, name=None, index=None):
         """Adds a node to the pipeline, including its function and execution
         parameters.
 
@@ -99,7 +99,7 @@ class Pipeline():
         """
 
         # Copy the parameters to avoid modifying the original dictionaries
-        params = copy.deepcopy(params)
+        params = copy.deepcopy(params) if params is not None else {}
 
         if name is None:
             name = "Node {}".format(len(self.nodes) + 1)
@@ -291,5 +291,83 @@ def standalone(input_keys, return_keys):
                     return tuple(result[key] for key in return_keys)
 
             return result
+        return wrapper
+    return pipeline_decorator
+
+
+def pipeline_node(input_keys=None):
+    """ Decorator to make a function compatible with pipeline execution
+    
+    If a datablock is passed as a kwarg, the function will be executed in
+    pipeline mode, and the values of the parameters named in input_keys will
+    be interpreted as datablock lookup keys. The corresponding objects will be
+    extracted from the datablock and passed to the function. Unregistered
+    keyword arguments will be passed directly to the function. The decorated
+    function takes a "return_key" kwarg to specify the key under which the
+    function output will be stored in the datablock. If not provided, the
+    function name will be used as the return key.
+
+    Parameters
+    ----------
+    input_keys: string or list of strings, optional
+        List of decorated function parameter names whose values will be used as
+        datablock lookup keys in pipeline mode.
+
+    Returns
+    -------
+    wrapper: function
+        The decorated function
+    """
+
+    if input_keys is not None:
+        if isinstance(input_keys, str):
+            input_keys = [input_keys]
+    else:
+        input_keys = []
+
+    def pipeline_decorator(func):
+        reserved = {"datablock", "return_key"}
+        if reserved & set(signature(func).parameters):
+            raise ValueError(f"Function {func.__name__} has reserved parameter"
+                             f" names {reserved & set(signature(func).parameters)}."
+                             "Please rename these parameters to use the"
+                             "pipeline_node decorator.")
+        
+        func_params = signature(func).parameters
+        unknown = set(input_keys) - set(func_params.keys())
+        if unknown:
+            raise ValueError(f"input_keys {unknown} not found in parameters "
+                              f"of '{func.__name__}'")
+        
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+
+            # Pop wrapper-specific kwargs
+            datablock = kwargs.pop("datablock", None)
+            return_key = kwargs.pop("return_key", func.__name__)
+
+            # Bind positional and keyword args to their parameter names
+            func_sig = signature(func)
+            try:
+                bound = func_sig.bind(*args, **kwargs)
+            except TypeError as e:
+                raise TypeError(
+                    f"Invalid arguments for function {func.__name__}."
+                ) from e
+            
+            bound.apply_defaults()
+
+            if datablock is None:
+                return func(*bound.args, **bound.kwargs)
+            
+            else:
+                for key in input_keys:
+                    bound.arguments[key] = get_dict(datablock,
+                                                    bound.arguments[key])
+                result = func(*bound.args, **bound.kwargs)
+
+                set_dict(datablock, return_key, result)
+                
+                return datablock
         return wrapper
     return pipeline_decorator
