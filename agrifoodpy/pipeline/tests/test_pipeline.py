@@ -1,4 +1,5 @@
 from agrifoodpy.pipeline import Pipeline, standalone
+import pytest
 
 def test_init():
     pipeline = Pipeline()
@@ -212,7 +213,7 @@ def test_pipeline_node_decorator():
     test_pipeline_single = Pipeline(test_datablock_single)
 
     # Test decorated function with single input key and no return key
-    @pipeline_node(['x'])
+    @pipeline_node('x')
     def double_numbers(x):
         return x * 2
     
@@ -225,6 +226,23 @@ def test_pipeline_node_decorator():
     assert double_numbers(test_datablock_single['value1']) == 10
     assert double_numbers.__name__ in test_pipeline_single.datablock
     assert test_pipeline_single.datablock[double_numbers.__name__] == 10
+
+    # Test decorated function with single input key and unregistered key
+    @pipeline_node('value')
+    def scale_numbers(value, factor=3):
+        return value * factor
+    
+    test_datablock_mixed = {'value': 5}
+
+    test_pipeline_mixed = Pipeline(test_datablock_mixed)
+    test_pipeline_mixed.add_node(
+        scale_numbers,
+        params={'value': 'value', 'factor': 4}
+        )
+    test_pipeline_mixed.run()
+    assert scale_numbers(test_datablock_mixed['value'], factor=4) == 20
+    assert scale_numbers.__name__ in test_pipeline_mixed.datablock
+    assert test_pipeline_mixed.datablock[scale_numbers.__name__] == 20
 
     # Test decorated function with multiple input keys and no return key
     test_datablock_multiple = {'value1': 5, 'value2': 10}
@@ -268,14 +286,13 @@ def test_pipeline_node_decorator():
     assert test_pipeline_with_return.datablock[return_key] == -5
 
     #test decorated function with external function
-
     test_datablock_external = {'value1': [1, 2, 3]}
     test_pipeline_external = Pipeline(test_datablock_external)
 
     import numpy as np
 
     test_pipeline_external.add_node(
-        pipeline_node(input_keys=["a"])(np.mean),
+        pipeline_node(input_keys="a")(np.mean),
         params={'a': 'value1', 'return_key': "mean_result"}
         )
     
@@ -284,22 +301,30 @@ def test_pipeline_node_decorator():
     assert "mean_result" in test_pipeline_external.datablock
     assert test_pipeline_external.datablock["mean_result"] == 2
 
+    # Test decorated function with no input keys
+    test_pipeline_no_input = Pipeline()
+
+    @pipeline_node([])
+    def return_constant():
+        return 42
+    
+    test_pipeline_no_input.add_node(
+        return_constant
+        )
+    
+    test_pipeline_no_input.run()
+    assert return_constant() == 42
+    assert return_constant.__name__ in test_pipeline_no_input.datablock
+    assert test_pipeline_no_input.datablock[return_constant.__name__] == 42
+
     # Test decorated function with reserved parameter names
-    try:
+    with pytest.raises(ValueError, match="reserved parameter names.*datablock"):
         @pipeline_node(['x'])
         def reserved_param_node(x, datablock=None):
             pass
-    
-    except ValueError as e:
-        assert "reserved parameter names" in str(e)
-        assert "datablock" in str(e)
 
-
-    # Test decorated function with unknown input keys
-    try:
+    # Test decorated function with unknown input keys    
+    with pytest.raises(ValueError, match="input_keys.*not found in parameters"):
         @pipeline_node(['wrong_key'])
         def unknown_input_node(right_key):
             pass
-
-    except ValueError as e:
-        assert "input_keys {'wrong_key'} not found in parameters" in str(e)

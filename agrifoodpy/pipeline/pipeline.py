@@ -295,7 +295,7 @@ def standalone(input_keys, return_keys):
     return pipeline_decorator
 
 
-def pipeline_node(input_keys):
+def pipeline_node(input_keys=None):
     """ Decorator to make a function compatible with pipeline execution
     
     If a datablock is passed as a kwarg, the function will be executed in
@@ -309,7 +309,7 @@ def pipeline_node(input_keys):
 
     Parameters
     ----------
-    input_keys: list of strings
+    input_keys: string or list of strings, optional
         List of decorated function parameter names whose values will be used as
         datablock lookup keys in pipeline mode.
 
@@ -318,6 +318,13 @@ def pipeline_node(input_keys):
     wrapper: function
         The decorated function
     """
+
+    if input_keys is not None:
+        if isinstance(input_keys, str):
+            input_keys = [input_keys]
+    else:
+        input_keys = []
+
     def pipeline_decorator(func):
         reserved = {"datablock", "return_key"}
         if reserved & set(signature(func).parameters):
@@ -354,11 +361,10 @@ def pipeline_node(input_keys):
                 return func(*bound.args, **bound.kwargs)
             
             else:
-                pipeline_kwargs = dict(bound.arguments)
                 for key in input_keys:
-                    pipeline_kwargs[key] = get_dict(datablock,
-                                                    pipeline_kwargs[key])
-                result = func(**pipeline_kwargs)
+                    bound.arguments[key] = get_dict(datablock,
+                                                    bound.arguments[key])
+                result = func(*bound.args, **bound.kwargs)
 
                 set_dict(datablock, return_key, result)
                 
