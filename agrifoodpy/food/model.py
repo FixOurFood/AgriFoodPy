@@ -490,7 +490,7 @@ def scale_above_threshold(
 
     # If a fallback DataArray is defined, transfer the excess negative
     # quantities to it
-    if fallback is not None:
+    if fallback is not None and origin is not None:
         for orig in origin:
             dif = out[orig].where(out[orig] < 0).fillna(0)
             out[fallback] -= np.where(add_to_fallback, 1, -1)*dif
