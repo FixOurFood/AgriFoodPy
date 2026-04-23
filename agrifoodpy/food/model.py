@@ -48,6 +48,9 @@ def balanced_scaling(
     constant : bool, optional
         If set to True, the sum of element remains constant by scaling the non
         selected items accordingly
+    padding_items : list, optional
+        List of items to use for scaling when 'constant' is True. If None, all
+        non-selected items are used for scaling.
     origin : string, list, optional
         Names of the DataArrays which will be used as source for the quantity
         changes. Any change to the "element" DataArray will be reflected in
@@ -89,14 +92,17 @@ def balanced_scaling(
                 np.isfinite(conversion_arr), other=1)
             if (conversion_arr == 0).any():
                 warnings.warn("Conversion array contains zero values, "
-                "which can lead to inaccurate scaling")
+                              "which can lead to inaccurate scaling")
+        elif isinstance(conversion_arr, (int, float)):
+            conversion_arr = xr.full_like(
+                data[element], fill_value=conversion_arr)
         else:
             conversion_arr = get_dict(datablock, conversion_arr)
 
-        data = data*conversion_arr
-
     else:
         conversion_arr = xr.ones_like(data[element])
+
+    data = data*conversion_arr
 
     out = copy.deepcopy(data)
 
@@ -149,7 +155,7 @@ def balanced_scaling(
         non_sel_scale = (data.sel(Item=non_sel_items)[element].sum(dim="Item")
                          - delta.sum(dim="Item")) \
             / data.sel(Item=non_sel_items)[element].sum(dim="Item")
-        
+
         # Identify where denominator is zero (non-finite scale)
         non_finite_mask = ~np.isfinite(non_sel_scale)
 
@@ -384,7 +390,7 @@ def IDR(
     return datablock
 
 
-@pipeline_node(["fbs", "scale", "element", "threshold", "conversion_arr"])
+@pipeline_node(["fbs", "conversion_arr"])
 def scale_above_threshold(
     fbs,
     scale,
@@ -444,8 +450,14 @@ def scale_above_threshold(
             if (conversion_arr == 0).any():
                 warnings.warn("Conversion array contains zero values," \
                 "which can lead to inaccurate scaling")
+
+        elif isinstance(conversion_arr, (int, float)):
+            conversion_arr = xr.full_like(
+                fbs[element], fill_value=conversion_arr)
     else:
         conversion_arr = xr.ones_like(fbs[element])
+
+    fbs = fbs*conversion_arr
 
     if items is not None:
         scaled_items = item_parser(fbs, items)
