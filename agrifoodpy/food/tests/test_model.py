@@ -388,3 +388,198 @@ def test_fbs_convert():
     )
 
     xr.testing.assert_allclose(result_factor, ex_result_factor)
+
+
+def test_scale_above_threshold():
+
+    from agrifoodpy.food.model import scale_above_threshold
+    from agrifoodpy.pipeline import Pipeline
+
+    items = ["Beef", "Apples"]
+    years = [2020, 2021]
+
+    fbs = xr.Dataset(
+        data_vars=dict(
+            imports=(["Year", "Item"], [[10., 20.], [30., 40.]]),
+            production=(["Year", "Item"], [[50., 60.], [70., 80.]]),
+            exports=(["Year", "Item"], [[5., 10.], [15., 20.]]),
+            food=(["Year", "Item"], [[55., 70.], [85., 100.]])
+        ),
+
+        coords=dict(Item=("Item", items), Year=("Year", years))
+    )
+
+    # Test basic result with unity scaling factor
+    result_basic = scale_above_threshold(
+        fbs,
+        scale=1.0,
+        element="food",
+    )
+
+    xr.testing.assert_allclose(result_basic, fbs)
+
+    # Test basic in a pipeline
+    test_pipeline = Pipeline({"data": fbs})
+
+    test_pipeline.add_node(
+        scale_above_threshold,
+        {
+            "fbs": "data",
+            "scale": 1.0,
+            "element": "food",
+        })
+
+    test_pipeline.run()
+
+    assert "scale_above_threshold" in test_pipeline.datablock
+    xr.testing.assert_equal(
+        test_pipeline.datablock["scale_above_threshold"], fbs)
+
+    # Test result with positive scaling factor less than 1
+    result_scaled = scale_above_threshold(
+        fbs,
+        scale=0.5,
+        element="food",
+        threshold=60.0
+    )
+    ex_result = (fbs["food"].sum(dim="Item") - 60.0) * 0.5 + 60.0
+    
+    xr.testing.assert_allclose(
+        result_scaled["food"].sum(dim="Item"),
+        ex_result)
+
+    # Test result with positive scaling factor greater than 1
+    result_scaled = scale_above_threshold(
+        fbs,
+        scale=2.0,
+        element="food",
+        threshold=60.0
+    )
+    ex_result = (fbs["food"].sum(dim="Item") - 60.0) * 2.0 + 60.0
+
+    xr.testing.assert_allclose(result_scaled["food"].sum(dim="Item"),
+                               ex_result)
+
+    # Test result with zero scaling factor
+    result_zero = scale_above_threshold(
+        fbs,
+        scale=0.0,
+        element="food",
+        threshold=60.0
+    )
+    ex_result_zero = (fbs["food"].sum(dim="Item") - 60.0) * 0.0 + 60.0
+    xr.testing.assert_allclose(
+        result_zero["food"].sum(dim="Item"),
+        ex_result_zero)
+
+    # Test result with array scale
+    scale_arr = xr.DataArray(
+        [0.1, 0.5],
+        dims=["Year"],
+        coords={"Year": years},
+    )
+
+    result_array_scale = scale_above_threshold(
+        fbs,
+        scale=scale_arr,
+        element="food",
+        threshold=60.0
+    )
+
+    ex_result_arr = (fbs["food"].sum(dim="Item") - 60.0) * scale_arr + 60.0
+    xr.testing.assert_allclose(
+        result_array_scale["food"].sum(dim="Item"),
+        ex_result_arr)
+
+    # Test with selected items
+    result_array_items = scale_above_threshold(
+        fbs,
+        scale=0.0,
+        element="food",
+        threshold=60.0,
+        items="Beef"
+    )
+
+    ex_result_sel = (fbs["food"].sum(dim="Item") - 60.0) * 0.0 + 60.0
+
+    xr.testing.assert_allclose(
+        result_array_items["food"].sum(dim="Item"),
+        ex_result_sel)
+
+    # Test with array threshold
+    threshold_arr = xr.DataArray(
+        [50.0, 70.0],
+        dims=["Year"],
+        coords={"Year": years},
+    )
+
+    result_array_threshold = scale_above_threshold(
+        fbs,
+        scale=0.5,
+        element="food",
+        threshold=threshold_arr
+    )
+
+    ex_result_threshold = (fbs["food"].sum(dim="Item") - threshold_arr) * 0.5 \
+        + threshold_arr
+
+    xr.testing.assert_allclose(
+        result_array_threshold["food"].sum(dim="Item"),
+        ex_result_threshold)
+
+    # Test with origin
+    result_origin = scale_above_threshold(
+        fbs,
+        scale=0.5,
+        element="food",
+        threshold=60.0,
+        origin="production"
+    )
+
+    excess = fbs["food"] - result_origin["food"]
+    ex_result_origin = fbs["production"] - excess
+    xr.testing.assert_allclose(
+        result_origin["production"], ex_result_origin)
+    
+    # Test with multiple origins and separate elasticity values
+    result_elasticity = scale_above_threshold(
+        fbs,
+        scale=0.5,
+        element="food",
+        threshold=60.0,
+        origin=["production", "imports"],
+        elasticity=[0.8, 0.2]
+    )
+
+    excess = fbs["food"] - result_elasticity["food"]
+    ex_result_prod = fbs["production"] - excess * 0.8
+    ex_result_imports = fbs["imports"] - excess * 0.2
+
+    xr.testing.assert_allclose(
+        result_elasticity["production"], ex_result_prod)
+    xr.testing.assert_allclose(
+        result_elasticity["imports"], ex_result_imports)
+    
+    # Test with conversion array
+    conversion_arr = xr.DataArray(
+        [1.0, 2.0],
+        dims=["Item"],
+        coords={"Item": items})
+    
+    result_conversion = scale_above_threshold(
+        fbs,
+        scale=0.5,
+        element="food",
+        threshold=60.0,
+        conversion_arr=conversion_arr
+    )
+
+    conv_arr = fbs * conversion_arr
+    ex_result_conv = (conv_arr["food"].sum(dim="Item") - 60.0) * 0.5 + 60.0
+
+    xr.testing.assert_allclose(
+        (result_conversion["food"]*conversion_arr).sum(dim="Item"),
+        ex_result_conv)
+
+
+    

@@ -412,7 +412,9 @@ def scale_above_threshold(
     fbs : xarray.Dataset
         Input food balance sheet Dataset
     scale : float, xarray.DataArray
-        Scaling value or array to apply to the excess above the threshold
+        Scaling value or array to apply to the excess above the threshold. A
+        value of 1 means no scaling, while a value of 0 means scaling down to
+        the threshold.
     element : string
         Name of the DataArray to scale
     threshold : float, xarray.DataArray, optional
@@ -471,7 +473,7 @@ def scale_above_threshold(
     max_scale_threshold = (fbs[element].sum(dim="Item") - threshold) \
         / fbs[element].sel(sel).sum(dim="Item")
     
-    scale_threshold = max_scale_threshold * scale
+    scale_threshold = max_scale_threshold * (1 - scale)
 
     if origin is not None and np.isscalar(origin):
         origin = [origin]
