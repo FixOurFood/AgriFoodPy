@@ -317,6 +317,37 @@ def test_pipeline_node_decorator():
     assert return_constant.__name__ in test_pipeline_no_input.datablock
     assert test_pipeline_no_input.datablock[return_constant.__name__] == 42
 
+    # Test decorated function with default parameter values and called with
+    # missing parameters
+    test_pipeline_default_missing = Pipeline({'input_value': 5})
+    @pipeline_node(['input_value', 'factor'])
+    def scale_with_default(input_value, factor=3):
+        return input_value * factor
+    
+    test_pipeline_default_missing.add_node(
+        scale_with_default,
+        params={'input_value': 'input_value'}
+        )
+    
+    test_pipeline_default_missing.run()
+    assert scale_with_default(test_pipeline_default_missing.datablock['input_value']) == 15
+    assert test_pipeline_default_missing.datablock[scale_with_default.__name__] == 15
+
+    # Test decorated function with default parameter values and called with all parameters
+    test_pipeline_default_all = Pipeline({'input_value': 5, 'factor': 4})
+    @pipeline_node(['input_value', 'factor'])
+    def scale_with_default_all(input_value=2, factor=3):
+        return input_value * factor
+    
+    test_pipeline_default_all.add_node(
+        scale_with_default_all,
+        params={'input_value': 'input_value', 'factor': 'factor'}
+        )
+    
+    test_pipeline_default_all.run()
+    assert scale_with_default_all(test_pipeline_default_all.datablock['input_value'], factor=4) == 20
+    assert test_pipeline_default_all.datablock[scale_with_default_all.__name__] == 20
+
     # Test decorated function with reserved parameter names
     with pytest.raises(ValueError, match="reserved parameter names.*datablock"):
         @pipeline_node(['x'])
