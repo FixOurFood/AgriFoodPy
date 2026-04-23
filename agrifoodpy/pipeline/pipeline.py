@@ -354,7 +354,8 @@ def pipeline_node(input_keys=None):
                 raise TypeError(
                     f"Invalid arguments for function {func.__name__}."
                 ) from e
-            
+
+            explicit_args = set(bound.arguments.keys())
             bound.apply_defaults()
 
             if datablock is None:
@@ -362,8 +363,9 @@ def pipeline_node(input_keys=None):
             
             else:
                 for key in input_keys:
-                    bound.arguments[key] = get_dict(datablock,
-                                                    bound.arguments[key])
+                    if key in explicit_args:
+                        bound.arguments[key] = get_dict(datablock,
+                                                        bound.arguments[key])
                 result = func(*bound.args, **bound.kwargs)
 
                 set_dict(datablock, return_key, result)
