@@ -453,9 +453,11 @@ class LandDataArray:
             if not isinstance(mask, xr.DataArray):
                 raise TypeError("'mask' must be an xarray.DataArray")
 
-            if set(mask.dims) != {"x", "y"}:
-                raise ValueError("'mask' must have exactly the spatial " \
-                "dimensions 'x' and 'y'")
+            if set(mask.dims) not in ({"x", "y"}, {"x", "y", "Year"}):
+                raise ValueError(
+                    "'mask' must have spatial dimensions 'x' and 'y', with "
+                    "an optional 'Year' dimension"
+                )
 
             spatial_template = map.isel({category_dim: 0})
             try:
@@ -472,9 +474,11 @@ class LandDataArray:
                 map.isel({category_dim:0}))*category_value
             
         elif isinstance(category_value, xr.DataArray):
-            if set(category_value.dims) != {"x", "y"}:
-                raise ValueError("'category_value' must have exactly the " \
-                "spatial dimensions 'x' and 'y'")
+            if set(category_value.dims) not in ({"x", "y"}, {"x", "y", "Year"}):
+                raise ValueError(
+                    "'category_value' must have spatial dimensions 'x' and "
+                    "'y', with an optional 'Year' dimension"
+                )
             
             spatial_template = map.isel({category_dim: 0})
             try:
@@ -486,7 +490,8 @@ class LandDataArray:
                 ) from err
         else:
             raise TypeError("'category_value' must be either a scalar or an " \
-            "xarray.DataArray with 'x' and 'y' dimensions")
+            "xarray.DataArray with 'x' and 'y' dimensions, and an optional "
+            "'Year' dimension")
 
         new_map = map.copy()
 

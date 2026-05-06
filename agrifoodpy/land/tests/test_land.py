@@ -259,6 +259,36 @@ def test_add_category_with_array_value():
         result.sel(categories="c").drop_vars("categories"),
         value_array)
 
+def test_add_category_with_year_array_value():
+    categories = ["a", "b"]
+    coords = {
+        "x": [0, 1, 2],
+        "y": [0, 1],
+        "Year": [2000, 2001],
+        "categories": categories,
+    }
+    data = np.random.rand(
+        len(coords["x"]),
+        len(coords["y"]),
+        len(coords["Year"]),
+        len(categories),
+    )
+    da = xr.DataArray(data, coords=coords)
+    land = LandDataArray(da)
+
+    value_array = xr.DataArray(
+        np.random.rand(len(coords["x"]), len(coords["y"]), len(coords["Year"])),
+        dims=["x", "y", "Year"],
+        coords={"x": coords["x"], "y": coords["y"], "Year": coords["Year"]},
+    )
+
+    result = land.add_category("c", category_value=value_array)
+    assert "c" in result["categories"].values
+    xr.testing.assert_allclose(
+        result.sel(categories="c").drop_vars("categories"),
+        value_array,
+    )
+
 def test_add_category_with_mask():
     categories = ["a", "b"]
     coords = {
@@ -281,6 +311,44 @@ def test_add_category_with_mask():
     result = land.add_category("c", category_value=1, mask=mask_array)
     assert "c" in result["categories"].values
     assert result.sel(categories="c").drop_vars("categories").equals(ex_result)
+
+def test_add_category_with_year_mask():
+    categories = ["a", "b"]
+    coords = {
+        "x": [0, 1, 2],
+        "y": [0, 1],
+        "Year": [2000, 2001],
+        "categories": categories,
+    }
+    data = np.random.rand(
+        len(coords["x"]),
+        len(coords["y"]),
+        len(coords["Year"]),
+        len(categories),
+    )
+    da = xr.DataArray(data, coords=coords)
+    land = LandDataArray(da)
+
+    mask_array = xr.DataArray(
+        np.array(
+            [
+                [[True, False], [False, True]],
+                [[False, True], [True, False]],
+                [[True, True], [False, False]],
+            ]
+        ),
+        dims=["x", "y", "Year"],
+        coords={"x": coords["x"], "y": coords["y"], "Year": coords["Year"]},
+    )
+
+    ex_result = xr.ones_like(mask_array, dtype=float).where(mask_array)
+
+    result = land.add_category("c", category_value=1, mask=mask_array)
+    assert "c" in result["categories"].values
+    xr.testing.assert_allclose(
+        result.sel(categories="c").drop_vars("categories"),
+        ex_result,
+    )
 
 def test_add_category_where_validation():
     classes = ["a", "b"]
