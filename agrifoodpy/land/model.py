@@ -126,24 +126,26 @@ def scale_land(
         Land category identifiers for the land uses to be converted.
     fraction : float, xarray.DataArray
         Conversion fraction of each repurposed land category. Can be a single
-        scalar value, an array with the same length as the origin land
-        categories, and optionally, include a time dimension for dynamic
-        conversion.
+        scalar value, or an xarray DataArray with the same length as the
+        ``origin`` land categories, and optionally, include a time dimension
+        for dynamic conversion.
     keep_land_constant : bool, optional
         If True, the total land area is kept constant by scaling the other
         categories proportionally to the change in the target category. If
         False, only the target category is scaled, allowing the total land area
         to change.
-    target : str, optional
-        Land category identifiers for the land use to convert to. If not
-        provided, the converted land distributed across all non-origin
+    target_category : str, optional
+        If keep_land_constant is True, this defines the land category
+        identifiers to convert land to in order to keep land constant. If not
+        provided, the converted land is distributed across all non-origin
         categories.
     target_distribution : array-like, xarray.DataArray, optional
         Relative distribution used to allocate converted land across target
         categories. If array-like, it must have the same length as ``target``.
         If a DataArray, it must include ``category_dim`` with coordinates equal
-        to ``target`` and can optionally include a ``Year`` dimension for
-        time-varying distribution.    
+        to ``target_category`` and can optionally include a ``Year`` dimension
+        for time-varying distribution. If not provided, the converted land is
+        distributed equally across target categories.
     category_dim : str
         Name of the land category dimension in the input land DataArray.
 
@@ -170,14 +172,14 @@ def scale_land(
 
     # Validate fraction values
     if np.isscalar(fraction):
-        if fraction < 0 or fraction > 1:
-            warnings.warn("Fraction values must be between 0 and 1")
+        if fraction < 0:
+            warnings.warn("Fraction values must be equal to or greater than 0")
     else:
-        if np.any((fraction < 0) | (fraction > 1)):
-            warnings.warn("Fraction values must be between 0 and 1")
+        if np.any((fraction < 0)):
+            warnings.warn("Fraction values must be equal to or greater than 0")
 
     # Scale land
-    delta_land = land.sel({category_dim: origin}) * fraction
+    delta_land = land.sel({category_dim: origin}) * (1 - fraction)
 
     new_land.loc[{category_dim: origin}] -= delta_land
 
@@ -276,10 +278,10 @@ def land_scaling_from_food(
     element,
     category,
     items=None,
-    category_dim=None,
     keep_land_constant=False,
     target_category=None,
     target_distribution=None,
+    category_dim=None,
 ):
     """Scale land categories based on relative changes to food quantities.
     
@@ -294,16 +296,13 @@ def land_scaling_from_food(
         Food balance sheet dataset containing the current food quantities.
     fbs_reference : xarray.DataSet
         Food balance sheet dataset containing the reference food quantities.
+    element : string
+        Name of the fbs element to obtain the food quantities from.
     category : string, list
         Name or list of names of the land use categories to be scaled.
     items : string, list, tuple, optional
         Item or list of items to be used for scaling. If not provided, all
         items are used.
-    element : string, optional
-        Name of the fbs element to obtain the food quantities.
-    category_dim : string, optional
-        Name of the dimension along which the land use categories are defined.
-        If not provided, the first non spatial dimension is used.
     keep_land_constant : bool, optional
         If True, the total land area is kept constant by scaling the other
         categories proportionally to the change in the target category. If False,
@@ -314,6 +313,9 @@ def land_scaling_from_food(
     target_distribution : array-like, xarray.DataArray, optional
         Relative distribution used to allocate land changes across target
         categories when keep_land_constant is True.
+    category_dim : string, optional
+        Name of the dimension along which the land use categories are defined.
+        If not provided, the first non spatial dimension is used.
     """
 
     # Obtain reference and current food quantities
@@ -331,7 +333,7 @@ def land_scaling_from_food(
     out_land = scale_land(
         land,
         origin=category,
-        fraction=1 - scaling_factor,
+        fraction=scaling_factor,
         keep_land_constant=keep_land_constant,
         target_category=target_category,
         target_distribution=target_distribution,

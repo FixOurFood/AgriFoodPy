@@ -79,8 +79,8 @@ def test_area_overlap():
                                            categories_left=input_cat_left,
                                            categories_right=input_cat_right)
     
-    assert(np.array_equal(expected_results_no_cats, result_no_cats))
-    assert(np.array_equal(result_no_cats.coords, [name_left, name_right]))
+    assert(np.array_equal(expected_results_categories, result_cats))
+    assert(np.array_equal(result_cats.coords, [name_left, name_right]))
     assert(np.array_equal(result_cats[name_left].values, input_cat_left))
     assert(np.array_equal(result_cats[name_right].values, input_cat_right))
 

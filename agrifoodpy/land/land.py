@@ -76,7 +76,7 @@ class LandDataArray:
         if len(extra_coords) >= 1:
             if labels is None:
                 labels = map[extra_coords[0]].values
-            map = self.dominant_class(category_dim=category_dim)
+            map = self.dominant_category(category_dim=category_dim)
         else:
             labels = np.unique(map.values)
 
@@ -96,8 +96,6 @@ class LandDataArray:
 
         xmin, xmax = map.x.values[[0, -1]]
         ymin, ymax = map.y.values[[0, -1]]
-
-        print(map)
 
         ax.imshow(map, interpolation="none", origin="lower",
                   extent=[xmin-dx_low,
@@ -121,14 +119,13 @@ class LandDataArray:
         DeprecationWarning,
         stacklevel=2)
 
-        return self.area_by_category(values=values, dim=dim)
+        return self.area_by_category(categories=values, dim=dim)
     
 
     def area_by_category(
         self,
         categories=None,
         dim=None,
-        **kwargs
     ):
         """Area per map category in a LandDataArray
 
@@ -137,7 +134,7 @@ class LandDataArray:
 
         Parameters
         ----------
-        values : int, array
+        cateogries : int, array
             List of categories to return the total area for. If not set,
             the function returns areas for all categories found on the map,
             excluding nan values.
@@ -151,14 +148,6 @@ class LandDataArray:
             Array with the corresponding areas overlaps for each category
             combination.
         """
-
-        if "values" in kwargs:
-            warn("values is deprecated as a keyword argument. "
-                 "Please use categories instead.",
-                 DeprecationWarning,
-                 stacklevel=2)
-
-            categories = kwargs.pop("values")
 
         map = self._obj
         ones = xr.ones_like(map)
@@ -369,7 +358,7 @@ class LandDataArray:
         return self.dominant_category(
             category_dim=class_coord,
             return_index=return_index,
-            kwargs=kwargs)
+            **kwargs)
 
     def dominant_category(
         self,
@@ -406,7 +395,7 @@ class LandDataArray:
         map = self._obj
 
         if category_dim is None:
-            category_dim = [dim for dim in map.dims if dim not in ["x", "y"]][0]
+            category_dim = [dim for dim in map.dims if dim not in ["Year", "x", "y"]][0]
 
         if return_index:
             len_class = len(map[category_dim].values)
