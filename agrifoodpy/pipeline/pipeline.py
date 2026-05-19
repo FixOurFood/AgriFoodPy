@@ -10,6 +10,7 @@ from inspect import signature
 import time
 import yaml
 import importlib
+import builtins
 from ..utils.dict_utils import get_dict, set_dict
 
 class Pipeline():
@@ -46,6 +47,23 @@ class Pipeline():
         pipeline : Pipeline
             The pipeline object.
         """
+
+        def dynamic_call_constructor(loader, suffix, node):
+            """Multi-constructor for arbitrary functions"""
+            func = cls._load_function(suffix)
+            
+            if isinstance(node, yaml.ScalarNode):
+                return func
+            elif isinstance(node, yaml.SequenceNode):
+                args = loader.construct_sequence(node)
+                return func(*args)
+            elif isinstance(node, yaml.MappingNode):
+                kwargs = loader.construct_mapping(node)
+                return func(**kwargs)
+            
+        # Register the multi-constructor for all tags starting with '!'
+        yaml.add_multi_constructor("!", dynamic_call_constructor,
+                                   Loader=yaml.FullLoader)
 
         with open(filename, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
