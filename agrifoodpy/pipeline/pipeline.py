@@ -10,7 +10,6 @@ from inspect import signature
 import time
 import yaml
 import importlib
-import builtins
 from ..utils.dict_utils import get_dict, set_dict
 
 class Pipeline():
@@ -33,6 +32,20 @@ class Pipeline():
         module = importlib.import_module(module_path)
         return getattr(module, func_name)
 
+    @staticmethod
+    def _is_supported_yaml_function(path):
+        """Return True for dotted numpy/xarray function paths."""
+        if not isinstance(path, str) or "." not in path:
+            return False
+
+        module_path, _ = path.rsplit(".", 1)
+        return (
+            module_path == "numpy"
+            or module_path.startswith("numpy.")
+            or module_path == "xarray"
+            or module_path.startswith("xarray.")
+        )
+
     @classmethod
     def read(cls, filename):
         """Read a pipeline configuration from a YAML file
@@ -48,22 +61,51 @@ class Pipeline():
             The pipeline object.
         """
 
-        def dynamic_call_constructor(loader, suffix, node):
-            """Multi-constructor for arbitrary functions"""
-            func = cls._load_function(suffix)
-            
-            if isinstance(node, yaml.ScalarNode):
-                return func
-            elif isinstance(node, yaml.SequenceNode):
-                args = loader.construct_sequence(node)
-                return func(*args)
-            elif isinstance(node, yaml.MappingNode):
-                kwargs = loader.construct_mapping(node)
-                return func(**kwargs)
-            
-        # Register the multi-constructor for all tags starting with '!'
-        yaml.add_multi_constructor("!", dynamic_call_constructor,
-                                   Loader=yaml.FullLoader)
+        def dynamic_call_constructor(package_name):
+            """Build a multi-constructor for supported package functions."""
+
+            def constructor(loader, suffix, node):
+                func_path = f"{package_name}.{suffix}" if suffix else package_name
+
+                # Check if the function path is supported
+                if not cls._is_supported_yaml_function(func_path):
+                    raise yaml.constructor.ConstructorError(
+                        None,
+                        None,
+                        f"Unsupported YAML function tag '!{func_path}'.",
+                        node.start_mark,
+                    )
+
+                func = cls._load_function(func_path)
+
+                if isinstance(node, yaml.ScalarNode):
+                    return func
+                if isinstance(node, yaml.SequenceNode):
+                    args = loader.construct_sequence(node)
+                    return func(*args)
+                if isinstance(node, yaml.MappingNode):
+                    kwargs = loader.construct_mapping(node)
+                    return func(**kwargs)
+
+                raise yaml.constructor.ConstructorError(
+                    None,
+                    None,
+                    f"Unsupported YAML node type for '!{func_path}'.",
+                    node.start_mark,
+                )
+
+            return constructor
+
+        yaml.add_multi_constructor(
+            "!numpy.",
+            dynamic_call_constructor("numpy"),
+            Loader=yaml.FullLoader,
+        )
+        yaml.add_multi_constructor(
+            "!xarray.",
+            dynamic_call_constructor("xarray"),
+            Loader=yaml.FullLoader,
+        )
 
         with open(filename, "r") as f:
             config = yaml.load(f, Loader=yaml.FullLoader)
