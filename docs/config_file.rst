@@ -4,7 +4,7 @@ Command line tool
 =================
 
 The ``agrifoodpy`` command line tool allows you to run a pipeline of functions
-defined in a configuration file. This is useful for automating workflows and
+defined in a YAML configuration file. This is useful for automating workflows and
 reproducibility. You can specify the configuration file and an output file for
 the results.
 
