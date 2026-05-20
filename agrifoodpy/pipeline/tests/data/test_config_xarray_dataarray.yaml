@@ -1,0 +1,6 @@
+nodes:
+  - function: agrifoodpy.utils.nodes.write_to_datablock
+    name: Xarray DataArray
+    params:
+      key: "test_value"
+      value: !xarray.DataArray [[1,2,3] , {Year: [2020, 2021, 2022]}, "Year"]

@@ -1,0 +1,6 @@
+nodes:
+  - function: agrifoodpy.utils.nodes.write_to_datablock
+    name: Unsupported Function
+    params:
+      key: "test_pandas_array"
+      value: !pandas.DataFrame {data: [1, 2, 3], columns: ["A", "B", "C"]}

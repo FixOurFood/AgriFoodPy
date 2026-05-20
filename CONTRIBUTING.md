@@ -54,8 +54,8 @@ for each new feature simplifies the development, review and merge processes by
 maintining logical separation. To create a feature branch:
 
 ```bash
-  git fetch agrifoodpy
-  git checkout -b <your-branch-name> agrifoodpy/main
+  git fetch afp
+  git checkout -b <your-branch-name> afp/main
 ```
 
 ### Hack away!
