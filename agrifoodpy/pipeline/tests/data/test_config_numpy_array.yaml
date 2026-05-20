@@ -1,0 +1,6 @@
+nodes:
+  - function: agrifoodpy.utils.nodes.write_to_datablock
+    name: Numpy Array
+    params:
+      key: "test_numpy_array"
+      value: !numpy.array [[1, 2, 3]]

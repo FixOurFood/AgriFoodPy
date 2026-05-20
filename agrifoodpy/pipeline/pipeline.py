@@ -81,10 +81,10 @@ class Pipeline():
                 if isinstance(node, yaml.ScalarNode):
                     return func
                 if isinstance(node, yaml.SequenceNode):
-                    args = loader.construct_sequence(node)
+                    args = loader.construct_sequence(node, deep=True)
                     return func(*args)
                 if isinstance(node, yaml.MappingNode):
-                    kwargs = loader.construct_mapping(node)
+                    kwargs = loader.construct_mapping(node, deep=True)
                     return func(**kwargs)
 
                 raise yaml.constructor.ConstructorError(
