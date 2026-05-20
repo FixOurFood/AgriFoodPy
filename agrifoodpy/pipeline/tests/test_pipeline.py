@@ -365,53 +365,53 @@ def test_pipeline_node_decorator():
 
 
 # Test reading YAML config with numpy array parameters and values
-def test_read_yaml_numpy_array_():
-        
-        script_dir = os.path.dirname(__file__)
-        config_path = os.path.join(script_dir, "data/test_config_numpy_array.yaml")
+def test_read_yaml_numpy_array():
+    
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_numpy_array.yaml")
 
-        pipeline = Pipeline.read(str(config_path))
-        pipeline.run()
+    pipeline = Pipeline.read(str(config_path))
+    pipeline.run()
 
-        assert np.array_equal(pipeline.params[0]['value'], np.array([1, 2, 3]))
-        assert np.array_equal(pipeline.datablock["test_numpy_array"], np.array([1, 2, 3]))
+    assert np.array_equal(pipeline.params[0]['value'], np.array([1, 2, 3]))
+    assert np.array_equal(pipeline.datablock["test_numpy_array"], np.array([1, 2, 3]))
 
 def test_read_yaml_numpy_array_kwargs():
-        script_dir = os.path.dirname(__file__)
-        config_path = os.path.join(script_dir, "data/test_config_numpy_array_kwargs.yaml")
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_numpy_array_kwargs.yaml")
 
-        pipeline = Pipeline.read(str(config_path))
-        pipeline.run()
+    pipeline = Pipeline.read(str(config_path))
+    pipeline.run()
 
-        assert np.array_equal(pipeline.params[0]['value'], np.array([1, 2, 3]))
-        assert np.array_equal(pipeline.datablock["test_numpy_array"], np.array([1, 2, 3]))
+    assert np.array_equal(pipeline.params[0]['value'], np.array([1, 2, 3]))
+    assert np.array_equal(pipeline.datablock["test_numpy_array"], np.array([1, 2, 3]))
 
 def test_read_yaml_xarray_dataarray():
-        script_dir = os.path.dirname(__file__)
-        config_path = os.path.join(script_dir, "data/test_config_xarray_dataarray.yaml")
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_xarray_dataarray.yaml")
 
-        pipeline = Pipeline.read(str(config_path))
-        pipeline.run()
+    pipeline = Pipeline.read(str(config_path))
+    pipeline.run()
 
-        expected_array = xr.DataArray([1, 2, 3], coords={"Year": [2020, 2021, 2022]}, dims=["Year"])
-        xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
-        xr.testing.assert_equal(pipeline.datablock["test_value"], expected_array)
+    expected_array = xr.DataArray([1, 2, 3], coords={"Year": [2020, 2021, 2022]}, dims=["Year"])
+    xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
+    xr.testing.assert_equal(pipeline.datablock["test_value"], expected_array)
 
 def test_read_yaml_xarray_dataarray_kwargs():
-        script_dir = os.path.dirname(__file__)
-        config_path = os.path.join(script_dir, "data/test_config_xarray_dataarray_kwargs.yaml")
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_xarray_dataarray_kwargs.yaml")
 
-        pipeline = Pipeline.read(str(config_path))
-        pipeline.run()
+    pipeline = Pipeline.read(str(config_path))
+    pipeline.run()
 
-        expected_array = xr.DataArray([1, 2, 3], coords={"Year": [2020, 2021, 2022]}, dims=["Year"])
-        xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
-        xr.testing.assert_equal(pipeline.datablock["test_value"], expected_array)
+    expected_array = xr.DataArray([1, 2, 3], coords={"Year": [2020, 2021, 2022]}, dims=["Year"])
+    xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
+    xr.testing.assert_equal(pipeline.datablock["test_value"], expected_array)
 
 def test_read_yaml_unsupported_function():
-        from yaml.constructor import ConstructorError
-        script_dir = os.path.dirname(__file__)
-        config_path = os.path.join(script_dir, "data/test_config_unsupported_function.yaml")
+    from yaml.constructor import ConstructorError
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_unsupported_function.yaml")
 
-        with pytest.raises(ConstructorError):
-            pipeline = Pipeline.read(str(config_path))
+    with pytest.raises(ConstructorError):
+        pipeline = Pipeline.read(str(config_path))
