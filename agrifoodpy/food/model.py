@@ -603,7 +603,6 @@ def food_scaling_from_land(
 
     # Compute scaling factor
     scaling_factor = obs_quantities / ref_quantities
-    scaling_factor = scaling_factor[land_dimension].values
 
     scaled_fbs = balanced_scaling(
         fbs=fbs,
