@@ -556,8 +556,6 @@ def food_scaling_from_land(
         Name of the DataArray to scale.
     items : list, optional
         List of items to scaled in the food balance sheet. If None, all items are scaled and 'constant' is ignored.
-    land_dimension : string, optional
-        Name of the land category dimension in the land datasets. Default is 'percentage_target'.
     category_dim : string, optional
         Name of the category dimension in the land datasets. If None, the first non-spatial dimension is used.
     keep_elements_constant : bool, optional
