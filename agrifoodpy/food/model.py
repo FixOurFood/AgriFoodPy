@@ -526,7 +526,6 @@ def food_scaling_from_land(
     categories,
     element,
     items=None,
-    land_dimension='percentage_target',  # might need to modify default
     category_dim=None,
     keep_elements_constant=False,
     target_items=None,  
