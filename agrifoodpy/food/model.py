@@ -598,8 +598,8 @@ def food_scaling_from_land(
         categories = [categories]
         
     # Obtain reference and current land quantities
-    ref_quantities = land_reference.sel({category_dim: categories}).sum(dim=category_dim).sum('x').sum('y')
-    obs_quantities = land_current.sel({category_dim: categories}).sum(dim=category_dim).sum('x').sum('y')
+    ref_quantities = land_reference.sel({category_dim: categories}).sum(dim=[category_dim, 'x', 'y'])
+    obs_quantities = land_current.sel({category_dim: categories}).sum(dim=[category_dim, 'x', 'y'])
 
     # Compute scaling factor
     scaling_factor = obs_quantities / ref_quantities
