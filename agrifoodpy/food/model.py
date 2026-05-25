@@ -551,34 +551,48 @@ def food_scaling_from_land(
     land_reference : xarray.DataArray
         Land array containing the reference land quantities.
     categories : string, list, tuple
-        Item or list of items to be used for scaling. If not provided, all items are used.
+        Item or list of items to be used for scaling. If not provided, all 
+        items are used.
     element : string
         Name of the DataArray to scale.
     items : list, optional
-        List of items to scaled in the food balance sheet. If None, all items are scaled and 'constant' is ignored.
+        List of items to scaled in the food balance sheet. If None, all items 
+        are scaled and 'constant' is ignored.
     category_dim : string, optional
-        Name of the category dimension in the land datasets. If None, the first non-spatial dimension is used.
+        Name of the category dimension in the land datasets. If None, the first 
+        non-spatial dimension is used.
     keep_elements_constant : bool, optional
-            If set to True, the sum of element remains constant by scaling the non selected items accordingly
+            If set to True, the sum of element remains constant by scaling the 
+            non selected items accordingly
     categories : string, list, tuple, optional
-        Item or list of items to be used for scaling. If not provided, all items are used.
+        Item or list of items to be used for scaling. If not provided, all 
+        items are used.
     target_items : list, optional
-        List of items to use for scaling when 'constant' is True. If None, all non-selected items are used for scaling.
+        List of items to use for scaling when 'constant' is True. If None, all 
+        non-selected items are used for scaling.
     origin : string, list, optional
-        Names of the DataArrays which will be used as source for the quantity changes. Any change to the "element" DataArray will be reflected in this DataArray
+        Names of the DataArrays which will be used as source for the quantity 
+        changes. Any change to the "element" DataArray will be reflected in 
+        this DataArray
     add_to_origin : bool, array, optional
         Whether to add or subtract the difference from the respective origins
     elasticity : float, array, optional
-        Relative fraction of the total difference to be assigned to each origin element. Values are not normalized.
+        Relative fraction of the total difference to be assigned to each origin
+        element. Values are not normalized.
     fallback : string
-        Name of the DataArray to use as fallback in case the origin quantities fall below zero
+        Name of the DataArray to use as fallback in case the origin quantities
+        fall below zero
     add_to_fallback : bool, optional
-        Whether to add or subtract the difference below zero in the origin DataArray to the fallback array.
+        Whether to add or subtract the difference below zero in the origin 
+        DataArray to the fallback array.
     conversion_arr : string, xarray.DataArray, tuple or float
-        Conversion array to pre-scale quantities. If provided, the input food balance sheet is first converted using the conversion array, then the scaling is applied, 
-        and finally the results are converted back to the original units using the inverse of the conversion array.
+        Conversion array to pre-scale quantities. If provided, the input food 
+        balance sheet is first converted using the conversion array, then the 
+        scaling is applied, and finally the results are converted back to the 
+        original units using the inverse of the conversion array.
     out_key : string, tuple
-        Output datablock path to write results to. If not given, input path is overwritten
+        Output datablock path to write results to. If not given, input path is 
+        overwritten
     data_block : dict, optional
         Dictionary containing data
 
@@ -595,12 +609,14 @@ def food_scaling_from_land(
         categories = [categories]
         
     # Obtain reference and current land quantities
-    ref_quantities = land_reference.sel({category_dim: categories}).sum(dim=[category_dim, 'x', 'y'])
-    obs_quantities = land_current.sel({category_dim: categories}).sum(dim=[category_dim, 'x', 'y'])
+    ref_quantities = land_reference.sel({category_dim: categories})\
+        .sum(dim=[category_dim, 'x', 'y'])
+    obs_quantities = land_current.sel({category_dim: categories})\
+        .sum(dim=[category_dim, 'x', 'y'])
 
     # Compute scaling factor
     scaling_factor = obs_quantities / ref_quantities
-
+    
     scaled_fbs = balanced_scaling(
         fbs=fbs,
         scale=scaling_factor,
