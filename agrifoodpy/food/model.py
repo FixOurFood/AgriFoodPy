@@ -535,8 +535,6 @@ def food_scaling_from_land(
     fallback=None,
     add_to_fallback=True,
     conversion_arr=None,
-    out_key=None,
-    data_block=None
     ):
     '''
     This function changes food quantities in a Food Balance Sheet array element 
