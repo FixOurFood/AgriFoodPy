@@ -628,8 +628,6 @@ def food_scaling_from_land(
         fallback=fallback,
         add_to_fallback=add_to_fallback,
         conversion_arr=conversion_arr,
-        out_key=out_key,
-        datablock=data_block,
         )
 
     return scaled_fbs
