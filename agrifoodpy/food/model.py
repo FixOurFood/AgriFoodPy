@@ -548,9 +548,9 @@ def food_scaling_from_land(
         Land array containing the current land quantities.
     land_reference : xarray.DataArray
         Land array containing the reference land quantities.
-    categories : string, list, tuple
-        Item or list of items to be used for scaling. If not provided, all 
-        items are used.
+    categories : string, list
+        Name or list of land use category names to be monitored for relative
+        food scaling.
     element : string
         Name of the DataArray to scale.
     items : list, optional
