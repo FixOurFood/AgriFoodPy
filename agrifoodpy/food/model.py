@@ -588,11 +588,6 @@ def food_scaling_from_land(
         balance sheet is first converted using the conversion array, then the 
         scaling is applied, and finally the results are converted back to the 
         original units using the inverse of the conversion array.
-    out_key : string, tuple
-        Output datablock path to write results to. If not given, input path is 
-        overwritten
-    data_block : dict, optional
-        Dictionary containing data
 
     Returns
     -------
