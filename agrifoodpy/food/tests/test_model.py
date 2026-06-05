@@ -583,3 +583,237 @@ def test_scale_above_threshold():
 
 
     
+
+def test_food_scaling_from_land_basic():
+    from agrifoodpy.food.model import food_scaling_from_land
+
+    # Food data
+    items = ["Beef", "Apples"]
+    food_coords = {"Item": items}
+    food_data = np.random.rand(len(food_coords["Item"]))
+
+    fbs = xr.Dataset(
+        data_vars={"production": (["Item"], food_data)},
+        coords=food_coords
+    )
+
+    # Land data
+    categories = ["Pasture", "Arable", "Forest"]
+    land_coords = {
+        "x": [0, 1, 2],
+        "y": [0, 1],
+        "category": categories,
+    }
+
+    land_data = np.random.rand(
+        len(land_coords["x"]),
+        len(land_coords["y"]),
+        len(land_coords["category"]))
+    land_ref = xr.DataArray(land_data, coords=land_coords)
+
+    land_obs = land_ref.copy(deep=True)
+    print(land_obs)
+    print()
+    print(fbs)
+    land_obs *= 2
+    
+    result = food_scaling_from_land(
+        fbs=fbs,
+        land_current=land_obs,
+        land_reference=land_ref,
+        categories='Pasture',
+        element='production'
+    )
+
+    truth = fbs.copy(deep=True)
+    truth["production"] *= 2.0
+    xr.testing.assert_allclose(result, truth)
+
+
+def test_food_scaling_from_land_basic_change():
+    from agrifoodpy.food.model import food_scaling_from_land
+
+    # Food data
+    items = ["Beef", "Apples"]
+    food_coords = {"Item": items}
+    food_data = np.random.rand(len(food_coords["Item"]))
+
+    fbs = xr.Dataset(
+        data_vars={"production": (["Item"], food_data)},
+        coords=food_coords
+    )
+
+    # Land data
+    categories = ["Pasture", "Arable", "Forest"]
+    land_coords = {
+        "x": [0, 1, 2],
+        "y": [0, 1],
+        "category": categories,
+    }
+
+    land_data = np.random.rand(
+        len(land_coords["x"]),
+        len(land_coords["y"]),
+        len(land_coords["category"]))
+    land_ref = xr.DataArray(land_data, coords=land_coords)
+
+    land_obs = land_ref.copy(deep=True)
+    land_obs *= 2
+    
+    result = food_scaling_from_land(
+        fbs=fbs,
+        land_current=land_obs,
+        land_reference=land_ref,
+        categories='Pasture',
+        element='production'
+    )
+
+    truth = fbs.copy(deep=True)
+    truth["production"] *= 2.0
+    xr.testing.assert_allclose(result, truth)
+
+
+def test_food_scaling_from_land_with_item():
+    from agrifoodpy.food.model import food_scaling_from_land
+
+    # Food data
+    items = ["Beef", "Apples"]
+    food_coords = {"Item": items}
+    food_data = np.random.rand(len(food_coords["Item"]))
+
+    fbs = xr.Dataset(
+        data_vars={"production": (["Item"], food_data)},
+        coords=food_coords
+    )
+
+    # Land data
+    categories = ["Pasture", "Arable", "Forest"]
+    land_coords = {
+        "x": [0, 1, 2],
+        "y": [0, 1],
+        "category": categories,
+    }
+
+    land_data = np.random.rand(
+        len(land_coords["x"]),
+        len(land_coords["y"]),
+        len(land_coords["category"]))
+    land_ref = xr.DataArray(land_data, coords=land_coords)
+
+    land_obs = land_ref.copy(deep=True)
+    print(land_obs)
+    land_obs *= 2
+    
+    result = food_scaling_from_land(
+        fbs=fbs,
+        land_current=land_obs,
+        land_reference=land_ref,
+        categories='Pasture',
+        element='production',
+        items='Beef'
+    )
+
+    truth = fbs.copy(deep=True)
+    truth['production'] = truth['production'].where(truth['Item'] != 'Beef', 
+                                                other=truth['production'] * 2)
+    xr.testing.assert_allclose(result, truth)
+
+
+def test_food_scaling_from_land_target_items():
+    from agrifoodpy.food.model import food_scaling_from_land
+
+    # Food data
+    items = ["Beef", "Apples"]
+    food_coords = {"Item": items}
+    food_data = np.random.rand(len(food_coords["Item"]))
+
+    fbs = xr.Dataset(
+        data_vars={"production": (["Item"], food_data)},
+        coords=food_coords
+    )
+
+    # Land data
+    categories = ["Pasture", "Arable", "Forest"]
+    land_coords = {
+        "x": [0, 1, 2],
+        "y": [0, 1],
+        "category": categories,
+    }
+
+    land_data = np.random.rand(
+        len(land_coords["x"]),
+        len(land_coords["y"]),
+        len(land_coords["category"]))
+    land_ref = xr.DataArray(land_data, coords=land_coords)
+
+    land_scale = np.random.rand() * 0.5 + 1
+    land_obs = land_ref.copy(deep=True)
+    land_obs *= land_scale
+    
+    result = food_scaling_from_land(
+        fbs=fbs,
+        land_current=land_obs,
+        land_reference=land_ref,
+        categories='Pasture',
+        element='production',
+        items = ['Beef'],
+        keep_elements_constant=True,
+        target_items=['Apples']
+    )
+
+    truth = fbs.copy(deep=True)
+    truth["production"].loc[{'Item':'Beef'}] *= land_scale
+    truth["production"].loc[{"Item": "Apples"}] -= fbs["production"].loc[{"Item": "Beef"}] \
+        * (land_scale - 1) 
+    xr.testing.assert_allclose(result, truth)
+
+
+def test_food_scaling_from_land_with_time_dependent_fbs():
+    from agrifoodpy.food.model import food_scaling_from_land
+
+    # Food data
+    items = ["Beef", "Apples"]
+    years = [2000, 2010]
+    food_coords = {"Item": items, "Year": years}
+    food_data = np.random.rand(
+        len(food_coords["Item"]),
+        len(food_coords["Year"])
+        )
+    fbs = xr.Dataset(
+        data_vars={"production": (["Item", "Year"], food_data)},
+        coords=food_coords
+    )
+
+    # Land data
+    categories = ["Pasture", "Arable", "Forest"]
+    land_coords = {
+        "x": [0, 1, 2],
+        "y": [0, 1],
+        "category": categories,
+    }
+
+    land_data = np.random.rand(
+        len(land_coords["x"]),
+        len(land_coords["y"]),
+        len(land_coords["category"]))
+    land_ref = xr.DataArray(land_data, coords=land_coords)
+
+    land_scale = np.random.rand() * 0.5 + 1
+    land_obs = land_ref.copy(deep=True)
+    land_obs *= land_scale
+
+    result = food_scaling_from_land(
+        fbs=fbs,
+        land_current=land_obs,
+        land_reference=land_ref,
+        categories='Pasture',
+        element='production',
+        items='Beef'
+    )
+
+    truth = fbs.copy(deep=True)
+    truth["production"].loc[{'Item':'Beef'}] *= land_scale
+    xr.testing.assert_allclose(result, truth)
+
+
+

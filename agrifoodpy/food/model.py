@@ -515,3 +515,114 @@ def scale_above_threshold(
     out = out/conversion_arr
 
     return out
+
+
+
+@pipeline_node(["fbs", "land_current", "land_reference"])
+def food_scaling_from_land(
+    fbs,
+    land_current,
+    land_reference,
+    categories,
+    element,
+    items=None,
+    category_dim=None,
+    keep_elements_constant=False,
+    target_items=None,  
+    origin=None,
+    add_to_origin=True,
+    elasticity=None,
+    fallback=None,
+    add_to_fallback=True,
+    conversion_arr=None,
+    ):
+    '''
+    This function changes food quantities in a Food Balance Sheet array element 
+    by scaling them relative to the change in a Land Data Array category quantities.
+    
+    Parameters
+    ----------
+    fbs : xarray.DataSet
+        Food balance sheet dataset containing the current food quantities.
+    land_current : xarray.DataArray
+        Land array containing the current land quantities.
+    land_reference : xarray.DataArray
+        Land array containing the reference land quantities.
+    categories : string, list
+        Name or list of land use category names to be monitored for relative
+        food scaling.
+    element : string
+        Name of the DataArray to scale.
+    items : list, optional
+        List of items to scaled in the food balance sheet. If None, all items 
+        are scaled and 'constant' is ignored.
+    category_dim : string, optional
+        Name of the category dimension in the land datasets. If None, the first 
+        non-spatial dimension is used.
+    keep_elements_constant : bool, optional
+            If set to True, the sum of element remains constant by scaling the 
+            non selected items accordingly
+    categories : string, list, tuple, optional
+        Item or list of items to be used for scaling. If not provided, all 
+        items are used.
+    target_items : list, optional
+        List of items to use for scaling when 'constant' is True. If None, all 
+        non-selected items are used for scaling.
+    origin : string, list, optional
+        Names of the DataArrays which will be used as source for the quantity 
+        changes. Any change to the "element" DataArray will be reflected in 
+        this DataArray
+    add_to_origin : bool, array, optional
+        Whether to add or subtract the difference from the respective origins
+    elasticity : float, array, optional
+        Relative fraction of the total difference to be assigned to each origin
+        element. Values are not normalized.
+    fallback : string
+        Name of the DataArray to use as fallback in case the origin quantities
+        fall below zero
+    add_to_fallback : bool, optional
+        Whether to add or subtract the difference below zero in the origin 
+        DataArray to the fallback array.
+    conversion_arr : string, xarray.DataArray, tuple or float
+        Conversion array to pre-scale quantities. If provided, the input food 
+        balance sheet is first converted using the conversion array, then the 
+        scaling is applied, and finally the results are converted back to the 
+        original units using the inverse of the conversion array.
+
+    Returns
+    -------
+    scales_fbs : 
+        '''
+    # Use the first non spatial dimension if category dimension not provided
+    if category_dim is None:
+        category_dim = [d for d in land_current.dims if d not in ["Year", "x", "y"]][0]
+
+    # Make categories into a list if not already
+    if np.isscalar(categories):
+        categories = [categories]
+        
+    # Obtain reference and current land quantities
+    ref_quantities = land_reference.sel({category_dim: categories})\
+        .sum(dim=[category_dim, 'x', 'y'])
+    obs_quantities = land_current.sel({category_dim: categories})\
+        .sum(dim=[category_dim, 'x', 'y'])
+
+    # Compute scaling factor
+    scaling_factor = obs_quantities / ref_quantities
+    
+    scaled_fbs = balanced_scaling(
+        fbs=fbs,
+        scale=scaling_factor,
+        element=element,
+        items=items,
+        constant=keep_elements_constant,
+        padding_items=target_items,
+        origin=origin,
+        add_to_origin=add_to_origin,
+        elasticity=elasticity,
+        fallback=fallback,
+        add_to_fallback=add_to_fallback,
+        conversion_arr=conversion_arr,
+        )
+
+    return scaled_fbs
