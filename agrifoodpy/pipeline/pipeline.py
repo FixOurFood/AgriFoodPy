@@ -16,6 +16,18 @@ class Pipeline():
     '''Class for constructing and running pipelines of functions with
     individual sets of parameters.'''
 
+    _SCALE_YAML_FUNCTIONS = {
+        "linear": "agrifoodpy.utils.scaling.linear_scale",
+        "step": "agrifoodpy.utils.scaling.step_scale",
+        "pulse": "agrifoodpy.utils.scaling.pulse_scale",
+        "logistic": "agrifoodpy.utils.scaling.logistic_scale",
+        "smoothstep": "agrifoodpy.utils.scaling.smoothstep_scale",
+
+        "piecewise_linear": "agrifoodpy.utils.scaling.piecewise_linear_scale",
+        "piecewise_constant": "agrifoodpy.utils.scaling.piecewise_constant_scale",
+        "piecewise_smoothstep": "agrifoodpy.utils.scaling.piecewise_smoothstep_scale",
+    }
+
     def __init__(self, datablock=None):
         self.nodes = []
         self.params = []
@@ -34,9 +46,12 @@ class Pipeline():
 
     @staticmethod
     def _is_supported_yaml_function(path):
-        """Return True for dotted numpy/xarray function paths."""
+        """Return True for dotted numpy/xarray and scale function paths."""
         if not isinstance(path, str) or "." not in path:
             return False
+
+        if path in Pipeline._SCALE_YAML_FUNCTIONS.values():
+            return True
 
         module_path, _ = path.rsplit(".", 1)
         return (
@@ -45,6 +60,17 @@ class Pipeline():
             or module_path == "xarray"
             or module_path.startswith("xarray.")
         )
+
+    @staticmethod
+    def _resolve_yaml_function_path(namespace, suffix):
+        """Resolve YAML constructor suffixes to supported function paths."""
+        if namespace == "scale":
+            return Pipeline._SCALE_YAML_FUNCTIONS.get(suffix)
+
+        if suffix:
+            return f"{namespace}.{suffix}"
+
+        return namespace
 
     @classmethod
     def read(cls, filename):
@@ -65,14 +91,23 @@ class Pipeline():
             """Build a multi-constructor for supported package functions."""
 
             def constructor(loader, suffix, node):
-                func_path = f"{package_name}.{suffix}" if suffix else package_name
+                func_path = cls._resolve_yaml_function_path(package_name, suffix)
+                tag_path = f"{package_name}.{suffix}" if suffix else package_name
+
+                if func_path is None:
+                    raise yaml.constructor.ConstructorError(
+                        None,
+                        None,
+                        f"Unsupported YAML function tag '!{tag_path}'.",
+                        node.start_mark,
+                    )
 
                 # Check if the function path is supported
                 if not cls._is_supported_yaml_function(func_path):
                     raise yaml.constructor.ConstructorError(
                         None,
                         None,
-                        f"Unsupported YAML function tag '!{func_path}'.",
+                        f"Unsupported YAML function tag '!{tag_path}'.",
                         node.start_mark,
                     )
 
@@ -104,6 +139,11 @@ class Pipeline():
         yaml.add_multi_constructor(
             "!xarray.",
             dynamic_call_constructor("xarray"),
+            Loader=yaml.FullLoader,
+        )
+        yaml.add_multi_constructor(
+            "!scale.",
+            dynamic_call_constructor("scale"),
             Loader=yaml.FullLoader,
         )
 
