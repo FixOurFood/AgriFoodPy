@@ -7,6 +7,7 @@ import importlib
 
 from ..pipeline import standalone
 from ..utils.dict_utils import get_dict, set_dict
+from ..food.food import FoodBalanceSheet
 
 
 @standalone(["dataset"], ["dataset"])
@@ -75,6 +76,7 @@ def add_items(
 def add_years(
     dataset,
     years,
+    pivot_year=None,
     projection='empty',
     datablock=None
 ):
@@ -94,11 +96,18 @@ def add_years(
         is copied to every new year. If "empty", values are initialized and
         set to zero. If a float array is given, these are used to populate
         the new year using a scaling of the last year of the array
+    pivot_year : int, optional
+        The year to use as the pivot for projections. If not specified, the last
+        year of the dataset is used.
     """
 
     data = get_dict(datablock, dataset)
 
-    data = data.fbs.add_years(years, projection)
+    data = data.fbs.add_years(
+        years,
+        pivot_year=pivot_year,
+        projection=projection
+        )
 
     set_dict(datablock, dataset, data)
 

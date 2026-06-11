@@ -515,3 +515,253 @@ def scale_above_threshold(
     out = out/conversion_arr
 
     return out
+
+@pipeline_node(["fbs", "population"])
+def project_by_population(
+    fbs,
+    population=None,
+    items=None,
+    food_element="food",
+    elasticity=0.5,
+    production_element="production",
+    imports_element="imports",
+    exports_element="exports",
+    scale_feed=False,
+    feed_element="feed",
+    feed_items=None,
+    scale_seed=False,
+    seed_element="seed",
+    seed_items=None,
+    scale_processing=False,
+    processing_element="processing",
+    processing_items=None,
+):
+    """Project a food balance sheet forward using population and yield changes.
+
+    The model scales selected food quantities by the relative population
+    change from the first available year and balances the resulting gap between
+    production and imports. Optionally, it adjusts feed, seed, and processing
+    quantities according to the resulting production change.
+    """
+
+    out = copy.deepcopy(fbs).fillna(0)
+    fbs = fbs.fillna(0)
+
+    if isinstance(population, xr.DataArray):
+        baseline_population = population.isel(Year=0)
+        pop_ratio = population / baseline_population
+        pop_ratio = pop_ratio.where(np.isfinite(pop_ratio), other=1.0)
+
+    elif np.isscalar(population):
+        pop_ratio = population
+
+    if items is None:
+        food_items = out.Item.values
+    else:
+        food_items = item_parser(out, items)
+
+    out = out.fbs.scale_element(
+        element=food_element,
+        scale=pop_ratio,
+        items=food_items,
+    )
+
+    # Balance fbs from production change
+    baseline_gap = (fbs[food_element]
+                   - (fbs[production_element]
+                      + fbs[imports_element]
+                      - fbs[exports_element]))
+
+    projected_gap = (out[food_element]
+                     - (out[production_element]
+                        + out[imports_element]
+                        - out[exports_element]))
+
+    # Balance by keeping ingress/egress delta
+    partial_gap_delta = projected_gap - baseline_gap
+
+    out[production_element] = out[production_element] + partial_gap_delta * elasticity
+    out[imports_element] = out[imports_element] + partial_gap_delta * (1 - elasticity)
+
+    fbs_partial = copy.deepcopy(out)
+
+    # Scales feed, seed, and processing according to total production change
+    def _scale_from_production_change(element_name, element_items):
+        """Scales the given element according to the production change ratio
+        for the given items. If element_items is None, all items are monitored.
+        """
+
+        if element_items is None:
+            parsed_items = out.Item.values
+
+        else:
+            parsed_items = item_parser(out, element_items)
+
+        production_ratio = (
+            out[production_element].sel(Item=parsed_items).sum(dim="Item")
+            / fbs[production_element].sel(Item=parsed_items).sum(dim="Item")
+        )
+
+        # Scale all items in the element by the production ratio
+        out[element_name] = out.fbs.scale_element(
+            element=element_name,
+            scale=production_ratio,
+        )[element_name]
+
+    if scale_feed:
+        _scale_from_production_change(feed_element, feed_items)
+    if scale_seed:
+        _scale_from_production_change(seed_element, seed_items)
+    if scale_processing:
+        _scale_from_production_change(processing_element, processing_items)
+
+    # Recalculate gap after scaling feed, seed, and processing
+    partial_baseline_gap = (fbs_partial[food_element]
+                    + fbs_partial[feed_element]
+                    + fbs_partial[seed_element]
+                    + fbs_partial[processing_element]
+                    - (fbs_partial[production_element]
+                       + fbs_partial[imports_element]
+                       - fbs_partial[exports_element]))
+
+    final_projected_gap = (out[food_element]
+                     + out[feed_element]
+                     + out[seed_element]
+                     + out[processing_element]
+                     - (out[production_element]
+                        + out[imports_element]
+                        - out[exports_element]))
+    
+    final_gap_delta = final_projected_gap - partial_baseline_gap
+
+    out[production_element] = out[production_element] + final_gap_delta * elasticity
+    out[imports_element] = out[imports_element] + final_gap_delta * (1 - elasticity)
+   
+    return out
+
+
+@pipeline_node(["fbs"])
+def increase_production_yield(
+    fbs,
+    yield_scale,
+    items=None,
+    elasticity=0.5,
+    production_element="production",
+    imports_element="imports",
+    exports_element="exports",
+    scale_feed=False,
+    feed_element="feed",
+    feed_items=None,
+    scale_seed=False,
+    seed_element="seed",
+    seed_items=None,
+    scale_processing=False,
+    processing_element="processing",
+    processing_items=None,        
+):
+    
+    """Increase production by a yield scale factor, and balance the resulting
+    gap between production and imports. Optionally, it adjusts feed, seed, and
+    processing quantities according to the resulting production change.
+    """
+
+    from ..utils.scaling import linear_scale
+
+    out = copy.deepcopy(fbs).fillna(0)
+    fbs = fbs.fillna(0)
+
+    if items is None:
+        prod_items = out.Item.values
+    else:
+        prod_items = item_parser(out, items)
+
+    if isinstance(yield_scale, (int, float)):
+        yield_scale = linear_scale(
+            y0=out.Year.values[0],
+            y1=out.Year.values[0],
+            y2=out.Year.values[-1],
+            y3=out.Year.values[-1],
+            c_init=1,
+            c_end=yield_scale,
+        )
+
+    elif isinstance(yield_scale, xr.DataArray):
+        yield_scale = yield_scale.where(np.isfinite(yield_scale), other=1.0)
+
+    out = out.fbs.scale_element(
+        element=production_element,
+        scale=yield_scale,
+        items=prod_items,
+    )
+
+    # Balance fbs from production change
+    partial_gap = (
+        out[production_element]
+        + out[imports_element]
+        - out[exports_element]
+    )
+
+    baseline_gap = (
+        fbs[production_element]
+        + fbs[imports_element]
+        - fbs[exports_element]
+    )
+
+    partial_gap_delta = partial_gap - baseline_gap
+
+    out[exports_element] = out[exports_element] + partial_gap_delta * elasticity
+    out[imports_element] = out[imports_element] - partial_gap_delta * (1 - elasticity)  
+
+    fbs_partial = copy.deepcopy(out)
+
+    # Scales feed, seed, and processing according to total production change
+    def _scale_from_production_change(element_name, element_items):
+        """Scales the given element according to the production change ratio
+        for the given items. If element_items is None, all items are monitored.
+        """
+
+        if element_items is None:
+            parsed_items = out.Item.values
+
+        else:
+            parsed_items = item_parser(out, element_items)
+
+        production_ratio = (
+            out[production_element].sel(Item=parsed_items).sum(dim="Item")
+            / fbs[production_element].sel(Item=parsed_items).sum(dim="Item")
+        )
+
+        # Scale all items in the element by the production ratio
+        out[element_name] = out.fbs.scale_element(
+            element=element_name,
+            scale=production_ratio,
+        )[element_name]
+
+    if scale_feed:
+        _scale_from_production_change(feed_element, feed_items)
+    if scale_seed:
+        _scale_from_production_change(seed_element, seed_items)
+    if scale_processing:
+        _scale_from_production_change(processing_element, processing_items)
+
+    # Recalculate gap after scaling feed, seed, and processing
+    partial_gap = (fbs_partial[feed_element]
+                    + fbs_partial[seed_element]
+                    + fbs_partial[processing_element]
+                    - (fbs_partial[production_element]
+                       + fbs_partial[imports_element]
+                       - fbs_partial[exports_element]))
+
+    projected_gap = (out[feed_element]
+                     + out[seed_element]
+                     + out[processing_element]
+                     - (out[production_element]
+                        + out[imports_element]
+                        - out[exports_element]))
+    
+    gap_delta = projected_gap - partial_gap
+
+    out[production_element] = out[production_element] + gap_delta * elasticity
+    out[imports_element] = out[imports_element] + gap_delta * (1 - elasticity)
+
+    return out

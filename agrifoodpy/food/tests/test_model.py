@@ -582,4 +582,80 @@ def test_scale_above_threshold():
         ex_result_conv)
 
 
+def test_per_capita_scaling():
+
+    from agrifoodpy.food.model import project_food_balance_sheet
+
+    items = ["Beef", "Apples"]
+    years = [2020, 2021]
+
+    fbs = xr.Dataset(
+        data_vars=dict(
+            imports=(["Year", "Item"], [[10., 10.], [10., 10.]]),
+            exports=(["Year", "Item"], [[0., 0.], [0., 0.]]),
+            production=(["Year", "Item"], [[10., 20.], [10., 20.]]),
+            food=(["Year", "Item"], [[20., 20.], [20., 20.]]),
+            feed=(["Year", "Item"], [[2., 2.], [2., 2.]]),
+            seed=(["Year", "Item"], [[3., 3.], [3., 3.]]),
+            processing=(["Year", "Item"], [[4., 4.], [4., 4.]])
+        ),
+        coords=dict(Item=("Item", items), Year=("Year", years))
+    )
+
+    population = xr.DataArray(
+        [100., 200.],
+        dims=["Year"],
+        coords={"Year": years},
+    )
+
+    result = project_food_balance_sheet(
+        fbs,
+        population,
+        items="Beef",
+        yield_items="Apples",
+        yield_scale=1.5,
+        elasticity=0.25,
+        feed_items="Apples",
+        seed_items="Apples",
+        processing_items="Apples",
+    )
+
+    xr.testing.assert_allclose(
+        result["food"].sel(Item="Beef"),
+        xr.DataArray([20., 40.], dims=("Year"), coords={"Year": years})
+    )
+    xr.testing.assert_allclose(
+        result["production"].sel(Item="Beef"),
+        xr.DataArray([10., 15.], dims=("Year"), coords={"Year": years})
+    )
+    xr.testing.assert_allclose(
+        result["imports"].sel(Item="Beef"),
+        xr.DataArray([10., 25.], dims=("Year"), coords={"Year": years})
+    )
+    xr.testing.assert_allclose(
+        result["food"].sel(Item="Apples"),
+        xr.DataArray([20., 20.], dims=("Year"), coords={"Year": years})
+    )
+    xr.testing.assert_allclose(
+        result["production"].sel(Item="Apples"),
+        xr.DataArray([27.5, 27.5], dims=("Year"), coords={"Year": years})
+    )
+    xr.testing.assert_allclose(
+        result["imports"].sel(Item="Apples"),
+        xr.DataArray([2.5, 2.5], dims=("Year"), coords={"Year": years})
+    )
+    xr.testing.assert_allclose(
+        result["feed"].sel(Item="Apples"),
+        xr.DataArray([2.75, 2.75], dims=("Year"), coords={"Year": years})
+    )
+    xr.testing.assert_allclose(
+        result["seed"].sel(Item="Apples"),
+        xr.DataArray([4.125, 4.125], dims=("Year"), coords={"Year": years})
+    )
+    xr.testing.assert_allclose(
+        result["processing"].sel(Item="Apples"),
+        xr.DataArray([5.5, 5.5], dims=("Year"), coords={"Year": years})
+    )
+
+
     
