@@ -471,8 +471,11 @@ def test_plot_bars():
     # Test with a "show" dimension not in the coordinate list
     with pytest.raises(ValueError):
         ax_notincoord = fbs.plot_bars(show="NotInCoord")
-       
-def test_plot_years():
+
+# Test for plot_years method
+
+
+def test_plot_years_default_call():
     
     years = [2019, 2010, 2011, 2012, 2013, 2014]
     regions = ['A', 'B', 'C']
@@ -492,6 +495,20 @@ def test_plot_years():
                           da.sum(dim="Region").values)
     assert np.array_equal(ax_default.lines[0].get_xdata(), da.Year.values)
 
+
+def test_plot_years_with_show_coordinate():
+
+    years = [2019, 2010, 2011, 2012, 2013, 2014]
+    regions = ['A', 'B', 'C']
+
+    da = xr.DataArray(
+        np.arange(len(years)*len(regions)).reshape(len(years), len(regions)),
+        coords=[('Year', years),
+                ('Region', regions)],
+        dims=['Year', 'Region'])
+
+    fbs = FoodElementSheet(da)
+
     # Test with explicit "show" coordinate
     ax_show = fbs.plot_years(show="Region")
     assert len(ax_show.lines) == 3
@@ -500,12 +517,39 @@ def test_plot_years():
                               da.cumsum(dim="Region").isel(Region=il).values)
         assert np.array_equal(line.get_xdata(), da.Year.values)
 
+
+def test_plot_years_with_stack_option():
+
+    years = [2019, 2010, 2011, 2012, 2013, 2014]
+    regions = ['A', 'B', 'C']
+
+    da = xr.DataArray(
+        np.arange(len(years)*len(regions)).reshape(len(years), len(regions)),
+        coords=[('Year', years),
+                ('Region', regions)],
+        dims=['Year', 'Region'])
+
+    fbs = FoodElementSheet(da)
+
     # Test without stacking
     ax_no_stack = fbs.plot_years(show="Region", stack=False)
     assert len(ax_no_stack.lines) == 3
     for il, line in enumerate(ax_no_stack.lines):
         assert np.array_equal(line.get_ydata(), da.isel(Region=il).values)
         assert np.array_equal(line.get_xdata(), da.Year.values)
+
+def test_plot_years_without_year_dimension():
+
+    years = [2019, 2010, 2011, 2012, 2013, 2014]
+    regions = ['A', 'B', 'C']
+
+    da = xr.DataArray(
+        np.arange(len(years)*len(regions)).reshape(len(years), len(regions)),
+        coords=[('Year', years),
+                ('Region', regions)],
+        dims=['Year', 'Region'])
+
+    fbs = FoodElementSheet(da)
 
     # Test with array wihtout "Year" dimension
     da_noyear = da.sum(dim="Year")

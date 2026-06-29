@@ -640,7 +640,7 @@ class FoodElementSheet(XarrayAccessorBase):
         if size_cumsum == 1:
             ax.fill_between(years, cumsum, color=colors[0], alpha=0.5)
             ax.plot(years, cumsum, color=colors[0], linewidth=0.5,
-                    label=labels)
+                    label=labels[0])
         else:
             ax.fill_between(years, cumsum.isel({show: 0}), color=colors[0],
                             alpha=0.5)
