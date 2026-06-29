@@ -7,7 +7,7 @@ import importlib
 
 from ..pipeline import standalone
 from ..utils.dict_utils import get_dict, set_dict
-from ..food.food import FoodBalanceSheet
+from ..food.food import FoodBalanceSheet # noqa: F401
 
 
 @standalone(["dataset"], ["dataset"])
@@ -94,7 +94,7 @@ def add_years(
     projection : str
         Projection mode. If "constant", the last year of the input array
         is copied to every new year. If "empty", values are initialized and
-        set to zero. If a float array is given, these are used to populate
+        set to NaN. If a float array is given, these are used to populate
         the new year using a scaling of the last year of the array
     pivot_year : int, optional
         The year to use as the pivot for projections. If not specified, the last

@@ -33,9 +33,9 @@ class XarrayAccessorBase(object):
         if np.isscalar(items):
             items = [items]
         
-        # Check for duplicates
+        # Check for duplicates, but keep the order of the input list
         indexes = np.unique(items, return_index=True)[1]
-        items = [items[index] for index in sorted(indexes)] #issues with np.unique
+        items = [items[index] for index in sorted(indexes)]
 
         new_items = xr.DataArray(data = np.ones(len(items)),
                                 coords = {"Item":items})
@@ -80,6 +80,7 @@ class XarrayAccessorBase(object):
         if np.isscalar(regions):
             regions = [regions]
 
+        # Check for duplicates, but keep the order of the input list
         indexes = np.unique(regions, return_index=True)[1]
         regions = [regions[index] for index in sorted(indexes)]
         
@@ -111,10 +112,13 @@ class XarrayAccessorBase(object):
         ----------
         years : list, int
             list of years to be added to the data
+        pivot_year : int, optional
+            Year to use as a pivot for the projection. If not provided, the
+            last year of the input array is used.
         projection : string or array_like
             Projection mode. If "constant", the last year of the input array
             is copied to every new year. If "empty", values are initialized and
-            set to zero. If a float array is given, these are used to populate
+            set to NaN. If a float array is given, these are used to populate
             the new year using a scaling of the last year of the array
 
         Returns
@@ -129,8 +133,7 @@ class XarrayAccessorBase(object):
             years = [years]
 
         # Sort and remove duplicates
-        indexes = np.unique(years, return_index=True)[1]
-        years = [years[index] for index in sorted(indexes)]
+        years = sorted(np.unique(years))
 
         # If no "Year" dimension, add one with the first year of the input
         if "Year" not in fbs.dims:

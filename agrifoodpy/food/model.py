@@ -519,7 +519,7 @@ def scale_above_threshold(
 @pipeline_node(["fbs", "population"])
 def project_by_population(
     fbs,
-    population=None,
+    population,
     items=None,
     food_element="food",
     elasticity=0.5,
@@ -542,6 +542,48 @@ def project_by_population(
     change from the first available year and balances the resulting gap between
     production and imports. Optionally, it adjusts feed, seed, and processing
     quantities according to the resulting production change.
+
+    Parameters
+    ----------
+    fbs : xarray.Dataset
+        Input food balance sheet Dataset
+    population : xarray.DataArray or float
+        Population data array or scalar value to scale food quantities by.
+    items : list, optional
+        List of items to scale in the food balance sheet. If None, all items
+        are scaled.
+    food_element : string, optional
+        Name of the DataArray containing the food data
+    elasticity : float, optional
+        Relative fraction of the total difference to be assigned to production
+        and imports.
+    production_element : string, optional
+        Name of the DataArray containing the production data
+    imports_element : string, optional
+        Name of the DataArray containing the imports data
+    exports_element : string, optional
+        Name of the DataArray containing the exports data
+    scale_feed : bool, optional
+        Whether to scale feed quantities according to the production change
+    feed_element : string, optional
+        Name of the DataArray containing the feed data
+    feed_items : list, optional
+        List of items to scale in the feed DataArray. If None, all items are
+        scaled.
+    scale_seed : bool, optional
+        Whether to scale seed quantities according to the production change
+    seed_element : string, optional
+        Name of the DataArray containing the seed data
+    seed_items : list, optional
+        List of items to scale in the seed DataArray. If None, all items are
+        scaled.
+    scale_processing : bool, optional
+        Whether to scale processing quantities according to the production change
+    processing_element : string, optional
+        Name of the DataArray containing the processing data
+    processing_items : list, optional
+        List of items to scale in the processing DataArray. If None, all items are
+        scaled.
     """
 
     out = copy.deepcopy(fbs).fillna(0)
@@ -602,6 +644,10 @@ def project_by_population(
             / fbs[production_element].sel(Item=parsed_items).sum(dim="Item")
         )
 
+        # Handle cases where the denominator is zero (no production in baseline)
+        production_ratio = production_ratio.where(
+            np.isfinite(production_ratio), other=1.0)
+
         # Scale all items in the element by the production ratio
         out[element_name] = out.fbs.scale_element(
             element=element_name,
@@ -641,7 +687,7 @@ def project_by_population(
 
 
 @pipeline_node(["fbs"])
-def increase_production_yield(
+def scale_production_yield(
     fbs,
     yield_scale,
     items=None,
@@ -660,9 +706,54 @@ def increase_production_yield(
     processing_items=None,        
 ):
     
-    """Increase production by a yield scale factor, and balance the resulting
-    gap between production and imports. Optionally, it adjusts feed, seed, and
+    """Scale production quantities in a food balance sheet according to a yield
+    scale factor.
+    
+    Scales production by a scale factor, and balance the resulting
+    gap between exports and imports. Optionally, it adjusts feed, seed, and
     processing quantities according to the resulting production change.
+
+    Parameters
+    ----------
+    fbs : xarray.Dataset
+        Input food balance sheet Dataset
+    yield_scale : float, xarray.DataArray
+        Yield scale factor or array to apply to the production element.
+        A value of 1 means no scaling, while a value of 0 means scaling down
+        to zero.
+    items : list, optional
+        List of items to scale in the food balance sheet. If None, all items
+        are scaled.
+    elasticity : float, optional
+        Relative fraction of the total difference to be assigned to exports
+        and imports.
+    production_element : string, optional
+        Name of the DataArray containing the production data
+    imports_element : string, optional
+        Name of the DataArray containing the imports data
+    exports_element : string, optional
+        Name of the DataArray containing the exports data
+    scale_feed : bool, optional
+        Whether to scale feed quantities according to the production change
+    feed_element : string, optional
+        Name of the DataArray containing the feed data
+    feed_items : list, optional
+        List of items to scale in the feed DataArray. If None, all items are
+        scaled.
+    scale_seed : bool, optional
+        Whether to scale seed quantities according to the production change
+    seed_element : string, optional
+        Name of the DataArray containing the seed data
+    seed_items : list, optional
+        List of items to scale in the seed DataArray. If None, all items are
+        scaled.
+    scale_processing : bool, optional
+        Whether to scale processing quantities according to the production change
+    processing_element : string, optional
+        Name of the DataArray containing the processing data
+    processing_items : list, optional
+        List of items to scale in the processing DataArray. If None, all items
+        are scaled.
     """
 
     from ..utils.scaling import linear_scale
@@ -730,6 +821,10 @@ def increase_production_yield(
             out[production_element].sel(Item=parsed_items).sum(dim="Item")
             / fbs[production_element].sel(Item=parsed_items).sum(dim="Item")
         )
+
+        # Handle cases where the denominator is zero (no production in baseline)
+        production_ratio = production_ratio.where(
+            np.isfinite(production_ratio), other=1.0)
 
         # Scale all items in the element by the production ratio
         out[element_name] = out.fbs.scale_element(
