@@ -1,4 +1,5 @@
 from agrifoodpy.pipeline import Pipeline, standalone
+from agrifoodpy.utils.scaling import linear_scale, logistic_scale
 import numpy as np
 import xarray as xr
 import pytest
@@ -408,10 +409,62 @@ def test_read_yaml_xarray_dataarray_kwargs():
     xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
     xr.testing.assert_equal(pipeline.datablock["test_value"], expected_array)
 
+def test_read_yaml_scale_linear():
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_scale_linear.yaml")
+
+    pipeline = Pipeline.read(str(config_path))
+    pipeline.run()
+
+    expected_array = linear_scale(2020, 2022, 2024, 2026, 1.0, 3.0)
+    xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
+    xr.testing.assert_equal(pipeline.datablock["test_scale_linear"], expected_array)
+
+def test_read_yaml_scale_linear_kwargs():
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_scale_linear_kwargs.yaml")
+
+    pipeline = Pipeline.read(str(config_path))
+    pipeline.run()
+
+    expected_array = linear_scale(2020, 2022, 2024, 2026, 1.0, 3.0)
+    xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
+    xr.testing.assert_equal(pipeline.datablock["test_scale_linear"], expected_array)
+
+def test_read_yaml_scale_logistic():
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_scale_logistic.yaml")
+
+    pipeline = Pipeline.read(str(config_path))
+    pipeline.run()
+
+    expected_array = logistic_scale(2020, 2022, 2024, 2026, 1.0, 3.0)
+    xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
+    xr.testing.assert_equal(pipeline.datablock["test_scale_logistic"], expected_array)
+
+def test_read_yaml_scale_logistic_kwargs():
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_scale_logistic_kwargs.yaml")
+
+    pipeline = Pipeline.read(str(config_path))
+    pipeline.run()
+
+    expected_array = logistic_scale(2020, 2022, 2024, 2026, 1.0, 3.0)
+    xr.testing.assert_equal(pipeline.params[0]['value'], expected_array)
+    xr.testing.assert_equal(pipeline.datablock["test_scale_logistic"], expected_array)
+
 def test_read_yaml_unsupported_function():
     from yaml.constructor import ConstructorError
     script_dir = os.path.dirname(__file__)
     config_path = os.path.join(script_dir, "data/test_config_unsupported_function.yaml")
+
+    with pytest.raises(ConstructorError):
+        pipeline = Pipeline.read(str(config_path))
+
+def test_read_yaml_unsupported_scale_function():
+    from yaml.constructor import ConstructorError
+    script_dir = os.path.dirname(__file__)
+    config_path = os.path.join(script_dir, "data/test_config_scale_unsupported_function.yaml")
 
     with pytest.raises(ConstructorError):
         pipeline = Pipeline.read(str(config_path))

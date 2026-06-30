@@ -51,3 +51,53 @@ and ``function`` is the name of the function to be executed.
 The parameters are specified as a dictionary of key-value pairs,
 where the keys are the parameter names.
 
+YAML constructors
+-----------------
+
+Configuration files can also use YAML tags to construct values during parsing,
+which can be useful for creating complex objects without the need to read the
+pipeline in a python environment and create the objects there. 
+
+The agrifoodpy library provides access to arbitrary numpy and xarray functions
+through the following YAML constructors:
+
+* ``!numpy.<function>``
+* ``!xarray.<function>``
+
+Additionally, there are specific constructors for utility functions defined in
+agrifoodpy:
+
+* ``!scale.linear``
+* ``!scale.logistic``
+* ``!scale.step``
+* ``!scale.pulse``
+* ``!scale.smoothstep``
+* ``!scale.piecewise_linear``
+* ``!scale.piecewise_constant``
+* ``!scale.piecewise_smoothstep``
+
+The ``!scale`` constructors call scaling utilities from
+``agrifoodpy.utils.scaling`` and return an ``xarray.DataArray``.
+
+Example with positional arguments:
+
+.. code-block:: yaml
+
+  nodes:
+    - function: agrifoodpy.utils.nodes.write_to_datablock
+      name: Linear scale
+      params:
+        key: my_scale
+        value: !scale.linear [2020, 2022, 2024, 2026, 1.0, 3.0]
+
+Example with keyword arguments:
+
+.. code-block:: yaml
+
+  nodes:
+    - function: agrifoodpy.utils.nodes.write_to_datablock
+      name: Logistic scale
+      params:
+        key: my_scale
+        value: !scale.logistic {y0: 2020, y1: 2022, y2: 2024, y3: 2026, c_init: 1.0, c_end: 3.0}
+
