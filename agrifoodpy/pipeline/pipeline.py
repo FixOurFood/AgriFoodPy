@@ -125,7 +125,7 @@ class Pipeline():
                 raise yaml.constructor.ConstructorError(
                     None,
                     None,
-                    f"Unsupported YAML node type for '!{func_path}'.",
+                    f"Unsupported YAML node type for '!{tag_path}'.",
                     node.start_mark,
                 )
 

@@ -73,6 +73,7 @@ agrifoodpy:
 * ``!scale.pulse``
 * ``!scale.smoothstep``
 * ``!scale.piecewise_linear``
+* ``!scale.piecewise_constant``
 * ``!scale.piecewise_smoothstep``
 
 The ``!scale`` constructors call scaling utilities from

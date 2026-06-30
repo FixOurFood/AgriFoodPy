@@ -268,6 +268,9 @@ def piecewise_smoothstep_scale(years, values, smoother=False):
             A list of years where the values change.
         values : (list of float)
             A list of values corresponding to each year in the 'years' list.
+        smoother : (bool), optional
+            If True, use a smoother 5th-degree polynomial smoothstep;
+            otherwise use the standard smoothstep.
 
     Returns: xr.DataArray
         An xarray DataArray object with 'Year' as the coordinate and values set
