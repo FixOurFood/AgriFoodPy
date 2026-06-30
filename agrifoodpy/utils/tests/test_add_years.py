@@ -2,7 +2,7 @@ import numpy as np
 import xarray as xr
 
 
-def test_add_items():
+def test_add_years():
 
     from agrifoodpy.utils.nodes import add_years
 
