@@ -1,6 +1,6 @@
 import numpy as np
 import xarray as xr
-
+import pytest
 import warnings
 
 def test_balanced_scaling():
@@ -814,4 +814,208 @@ def test_food_scaling_from_land_with_time_dependent_fbs():
     xr.testing.assert_allclose(result, truth)
 
 
+@pytest.fixture
+def year_scale_data():
+    years = [2020, 2021, 2022, 2023]
+    pop_data = np.array([1.0, 1.5, 2.0, 2.5])
+    pop_coords = {"Year": years}
+    population = xr.DataArray(pop_data, coords=pop_coords, dims=["Year"])
+    return population
 
+
+@pytest.fixture
+def food_data():
+    items = ["Beef", "Wheat"]
+    years = [2020]
+
+    fbs = xr.Dataset(
+        data_vars=dict(
+            imports=(["Year", "Item"], [[10., 20.]]),
+            production=(["Year", "Item"], [[50., 60.]]),
+            exports=(["Year", "Item"], [[5., 10.]]),
+            food=(["Year", "Item"], [[45., 50.]]),
+            feed=(["Year", "Item"], [[0., 10.]]),
+            seed=(["Year", "Item"], [[0., 4.]]),
+            processing=(["Year", "Item"], [[10., 6.]])
+            ),
+
+        coords=dict(Item=("Item", items), Year=("Year", years))
+    )
+
+    fbs = fbs.fbs.add_years(years=[2021, 2022, 2023], projection="constant")
+
+    return fbs
+
+
+# project_by_population tests
+
+def test_project_by_population_basic(year_scale_data, food_data):
+    from agrifoodpy.food.model import project_by_population
+
+    result = project_by_population(
+        fbs=food_data,
+        population=year_scale_data,
+        items='Beef'
+    )
+
+    expected_scale_factor = year_scale_data / year_scale_data.sel(Year=2020)
+    expected_result = food_data.copy(deep=True)
+    expected_result["food"].loc[{'Item':'Beef'}] *= expected_scale_factor
+    delta_food = expected_result["food"] - food_data["food"]
+    expected_result["production"] += delta_food * 0.5
+    expected_result["imports"] += delta_food * 0.5
+
+    xr.testing.assert_allclose(result, expected_result)
+
+
+def test_project_by_population_with_elasticity(year_scale_data, food_data):
+
+    from agrifoodpy.food.model import project_by_population
+    elasticity = np.random.rand()
+
+    result = project_by_population(
+        fbs=food_data,
+        population=year_scale_data,
+        items='Beef',
+        elasticity=elasticity
+    )
+
+    expected_scale_factor = year_scale_data / year_scale_data.sel(Year=2020)
+    expected_result = food_data.copy(deep=True)
+    expected_result["food"].loc[{'Item':'Beef'}] *= expected_scale_factor
+    delta_food = expected_result["food"] - food_data["food"]
+    expected_result["production"] += delta_food * elasticity
+    expected_result["imports"] += delta_food * (1-elasticity)
+
+    xr.testing.assert_allclose(result, expected_result)
+
+
+def test_project_by_population_with_feed_scaling(year_scale_data, food_data):
+    from agrifoodpy.food.model import project_by_population
+
+    result = project_by_population(
+        fbs=food_data,
+        population=year_scale_data,
+        items='Beef',
+        scale_feed=True,
+        feed_items="Beef"
+    )
+
+    expected_food_factor = year_scale_data / year_scale_data.sel(Year=2020)
+    expected_result = food_data.copy(deep=True)
+    expected_result["food"].loc[{'Item':'Beef'}] *= expected_food_factor
+    
+    delta_food = expected_result["food"] - food_data["food"]
+    
+    expected_result["production"] += delta_food * 0.5
+    expected_result["imports"] += delta_food * 0.5
+
+    expected_feed_factor = (
+        expected_result["production"].loc[{'Item':'Beef'}]
+        / food_data["production"].loc[{'Item':'Beef'}])
+    
+    expected_result["feed"] *= expected_feed_factor
+    delta_feed = expected_result["feed"] - food_data["feed"]
+
+    expected_result["production"] += delta_feed * 0.5
+    expected_result["imports"] += delta_feed * 0.5
+    
+    xr.testing.assert_allclose(result, expected_result)
+
+
+# scale_production_yield tests
+
+def test_scale_production_yield_basic(food_data):
+    from agrifoodpy.food.model import scale_production_yield
+
+    yield_scale = np.random.rand() + 0.5
+
+    result = scale_production_yield(
+        fbs=food_data,
+        yield_scale=yield_scale,
+    )
+
+    expected_result = food_data.copy(deep=True)
+    expected_result["production"] *= yield_scale
+    delta_production = expected_result["production"] - food_data["production"]
+
+    expected_result["exports"] += delta_production * 0.5
+    expected_result["imports"] -= delta_production * 0.5
+
+    xr.testing.assert_allclose(
+        result["production"], expected_result["production"])
+
+
+def test_scale_production_yield_with_elasticity(food_data):
+    from agrifoodpy.food.model import scale_production_yield
+
+    elasticity = np.random.rand()
+    yield_scale = np.random.rand() + 0.5
+
+    result = scale_production_yield(
+        fbs=food_data,
+        yield_scale=yield_scale,
+        elasticity=elasticity
+    )
+
+    expected_result = food_data.copy(deep=True)
+    expected_result["production"] *= yield_scale
+    delta_production = expected_result["production"] - food_data["production"]
+
+    expected_result["exports"] += delta_production * elasticity
+    expected_result["imports"] -= delta_production * (1 - elasticity)
+
+    xr.testing.assert_allclose(result, expected_result)
+
+
+def test_scale_production_yield_with_feed_scaling(year_scale_data, food_data):
+    from agrifoodpy.food.model import scale_production_yield
+
+    yield_scale = np.random.rand() + 0.5
+
+    result = scale_production_yield(
+        fbs=food_data,
+        yield_scale=yield_scale,
+        scale_feed=True,
+        feed_items="Beef"
+    )
+
+    expected_result = food_data.copy(deep=True)
+    expected_result["production"] *= yield_scale
+    
+    delta_production = expected_result["production"] - food_data["production"]
+    
+    expected_result["exports"] += delta_production * 0.5
+    expected_result["imports"] -= delta_production * 0.5
+
+    expected_feed_factor = (
+        expected_result["production"].loc[{'Item':'Beef'}]
+        / food_data["production"].loc[{'Item':'Beef'}])
+    
+    expected_result["feed"] *= expected_feed_factor
+    delta_feed = expected_result["feed"] - food_data["feed"]
+
+    expected_result["production"] += delta_feed * 0.5
+    expected_result["imports"] += delta_feed * 0.5
+    
+    xr.testing.assert_allclose(result, expected_result)
+
+
+def test_scale_production_yield_with_array_scaling(year_scale_data, food_data):
+    from agrifoodpy.food.model import scale_production_yield
+
+    yield_scale = year_scale_data
+
+    result = scale_production_yield(
+        fbs=food_data,
+        yield_scale=yield_scale,
+    )
+
+    expected_result = food_data.copy(deep=True)
+    expected_result["production"] *= yield_scale
+    delta_production = expected_result["production"] - food_data["production"]
+
+    expected_result["exports"] += delta_production * 0.5
+    expected_result["imports"] -= delta_production * 0.5
+
+    xr.testing.assert_allclose(result, expected_result)
