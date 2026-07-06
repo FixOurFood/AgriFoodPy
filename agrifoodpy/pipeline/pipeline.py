@@ -426,7 +426,7 @@ def pipeline_node(input_keys=None):
         input_keys = []
 
     def pipeline_decorator(func):
-        reserved = {"datablock", "return_key"}
+        reserved = {"datablock", "return_key", "return_keys"}
         if reserved & set(signature(func).parameters):
             raise ValueError(f"Function {func.__name__} has reserved parameter"
                              f" names {reserved & set(signature(func).parameters)}."
@@ -444,7 +444,12 @@ def pipeline_node(input_keys=None):
 
             # Pop wrapper-specific kwargs
             datablock = kwargs.pop("datablock", None)
-            return_key = kwargs.pop("return_key", func.__name__)
+            
+            return_keys = kwargs.pop("return_keys", None)
+            if return_keys is None:
+                return_keys = kwargs.pop("return_key", func.__name__)
+            if isinstance(return_keys, str):
+                return_keys = [return_keys]
 
             # Bind positional and keyword args to their parameter names
             func_sig = signature(func)
@@ -468,8 +473,13 @@ def pipeline_node(input_keys=None):
                                                         bound.arguments[key])
                 result = func(*bound.args, **bound.kwargs)
 
-                set_dict(datablock, return_key, result)
-                
+                if isinstance(result, tuple):
+                    for rk, rs in zip(return_keys, result):
+                        set_dict(datablock, rk, rs)
+
+                else:
+                    set_dict(datablock, return_keys[0], result)
+
                 return datablock
         return wrapper
     return pipeline_decorator
