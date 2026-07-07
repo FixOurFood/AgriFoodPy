@@ -403,9 +403,10 @@ def pipeline_node(input_keys=None):
     be interpreted as datablock lookup keys. The corresponding objects will be
     extracted from the datablock and passed to the function. Unregistered
     keyword arguments will be passed directly to the function. The decorated
-    function takes a "return_key" kwarg to specify the key under which the
-    function output will be stored in the datablock. If not provided, the
-    function name will be used as the return key.
+    function takes "return_key" or "return_keys" kwargs to specify the keys
+    under which the function outputs will be stored in the datablock.
+    If not provided, the function name will be used as the prefix for the
+    return keys.
 
     Parameters
     ----------
@@ -426,7 +427,52 @@ def pipeline_node(input_keys=None):
         input_keys = []
 
     def pipeline_decorator(func):
-        reserved = {"datablock", "return_key"}
+
+        def normalize_return_keys(return_keys):
+            if isinstance(return_keys, (str, tuple)):
+                return [return_keys]
+
+            if isinstance(return_keys, list):
+                return return_keys
+
+            raise TypeError(
+                "return_key/return_keys must be a str, tuple, or list."
+            )
+
+        def validate_return_keys(return_keys):
+            if len(return_keys) == 0:
+                raise ValueError("return_keys cannot be empty.")
+
+            for i, key in enumerate(return_keys):
+                if isinstance(key, str):
+                    continue
+
+                if isinstance(key, tuple):
+                    if len(key) == 0:
+                        raise ValueError(
+                            f"return_keys[{i}] tuple path cannot be empty."
+                        )
+
+                    for j, key_part in enumerate(key):
+                        if not isinstance(key_part, str):
+                            raise TypeError(
+                                "return_keys[{}][{}] path component must be "
+                                "str, got {}.".format(
+                                    i,
+                                    j,
+                                    type(key_part).__name__,
+                                )
+                            )
+                    continue
+
+                raise TypeError(
+                    "return_keys[{}] must be str or tuple, got {}.".format(
+                        i,
+                        type(key).__name__,
+                    )
+                )
+
+        reserved = {"datablock", "return_key", "return_keys"}
         if reserved & set(signature(func).parameters):
             raise ValueError(f"Function {func.__name__} has reserved parameter"
                              f" names {reserved & set(signature(func).parameters)}."
@@ -444,7 +490,29 @@ def pipeline_node(input_keys=None):
 
             # Pop wrapper-specific kwargs
             datablock = kwargs.pop("datablock", None)
-            return_key = kwargs.pop("return_key", func.__name__)
+
+            has_return_key = (
+                "return_key" in kwargs and kwargs["return_key"] is not None
+            )
+            has_return_keys = (
+                "return_keys" in kwargs and kwargs["return_keys"] is not None
+            )
+
+            if has_return_key and has_return_keys:
+                raise ValueError(
+                    "Ambiguous return mapping: both 'return_key' and "
+                    "'return_keys' were provided."
+                )
+
+            return_keys = kwargs.pop("return_keys", None)
+            return_key = kwargs.pop("return_key", None)
+
+            if return_keys is None and return_key is not None:
+                return_keys = return_key
+
+            if return_keys is not None:
+                return_keys = normalize_return_keys(return_keys)
+                validate_return_keys(return_keys)
 
             # Bind positional and keyword args to their parameter names
             func_sig = signature(func)
@@ -468,8 +536,35 @@ def pipeline_node(input_keys=None):
                                                         bound.arguments[key])
                 result = func(*bound.args, **bound.kwargs)
 
-                set_dict(datablock, return_key, result)
-                
+                if return_keys is None:
+                    if isinstance(result, tuple):
+                        return_keys = [
+                            f"{func.__name__}_{i}" for i in range(len(result))
+                        ]
+                    else:
+                        return_keys = [func.__name__]
+
+                if isinstance(result, tuple):
+                    if len(return_keys) != len(result):
+                        raise ValueError(
+                            f"Function '{func.__name__}' returned tuple of "
+                            f"length {len(result)}, but {len(return_keys)} "
+                            "return keys were provided."
+                        )
+
+                    for rk, rs in zip(return_keys, result):
+                        set_dict(datablock, rk, rs)
+
+                else:
+                    if len(return_keys) != 1:
+                        raise ValueError(
+                            f"Function '{func.__name__}' returned non-tuple "
+                            f"{type(result).__name__}, but {len(return_keys)} "
+                            "return keys were provided."
+                        )
+
+                    set_dict(datablock, return_keys[0], result)
+
                 return datablock
         return wrapper
     return pipeline_decorator
