@@ -365,6 +365,119 @@ def test_pipeline_node_decorator():
             pass
 
 
+def test_pipeline_node_multi_output_and_return_keys():
+
+    from agrifoodpy.pipeline.pipeline import Pipeline, pipeline_node
+
+    @pipeline_node([])
+    def split_values():
+        return 10, 20
+
+    @pipeline_node([])
+    def scalar_value():
+        return 7
+
+    # Explicit string keys for tuple output
+    pipeline_string_keys = Pipeline()
+    pipeline_string_keys.add_node(
+        split_values,
+        params={"return_keys": ["out1", "out2"]},
+    )
+    pipeline_string_keys.run()
+    assert pipeline_string_keys.datablock["out1"] == 10
+    assert pipeline_string_keys.datablock["out2"] == 20
+
+    # Explicit tuple paths for tuple output
+    pipeline_tuple_paths = Pipeline()
+    pipeline_tuple_paths.add_node(
+        split_values,
+        params={"return_keys": [("nested", "a"), ("nested", "b")]},
+    )
+    pipeline_tuple_paths.run()
+    assert pipeline_tuple_paths.datablock["nested"]["a"] == 10
+    assert pipeline_tuple_paths.datablock["nested"]["b"] == 20
+
+    # Mixed str/tuple paths for tuple output
+    pipeline_mixed_paths = Pipeline()
+    pipeline_mixed_paths.add_node(
+        split_values,
+        params={"return_keys": ["out", ("nested", "out")]},
+    )
+    pipeline_mixed_paths.run()
+    assert pipeline_mixed_paths.datablock["out"] == 10
+    assert pipeline_mixed_paths.datablock["nested"]["out"] == 20
+
+    # Auto-generated keys for tuple outputs when no keys are passed
+    pipeline_auto_keys = Pipeline()
+    pipeline_auto_keys.add_node(split_values)
+    pipeline_auto_keys.run()
+    assert pipeline_auto_keys.datablock["split_values_0"] == 10
+    assert pipeline_auto_keys.datablock["split_values_1"] == 20
+
+    # Single tuple path through return_key for scalar output
+    pipeline_return_key_tuple = Pipeline()
+    pipeline_return_key_tuple.add_node(
+        scalar_value,
+        params={"return_key": ("nested", "scalar")},
+    )
+    pipeline_return_key_tuple.run()
+    assert pipeline_return_key_tuple.datablock["nested"]["scalar"] == 7
+
+    # Mismatch: tuple output with fewer keys
+    pipeline_tuple_mismatch = Pipeline()
+    pipeline_tuple_mismatch.add_node(
+        split_values,
+        params={"return_keys": ["only_one"]},
+    )
+    with pytest.raises(ValueError, match="returned tuple of length"):
+        pipeline_tuple_mismatch.run()
+
+    # Mismatch: scalar output with multiple keys
+    pipeline_scalar_mismatch = Pipeline()
+    pipeline_scalar_mismatch.add_node(
+        scalar_value,
+        params={"return_keys": ["a", "b"]},
+    )
+    with pytest.raises(ValueError, match="returned non-tuple"):
+        pipeline_scalar_mismatch.run()
+
+    # Empty return_keys is invalid
+    pipeline_empty_keys = Pipeline()
+    pipeline_empty_keys.add_node(
+        scalar_value,
+        params={"return_keys": []},
+    )
+    with pytest.raises(ValueError, match="cannot be empty"):
+        pipeline_empty_keys.run()
+
+    # Invalid key type is rejected
+    pipeline_bad_key_type = Pipeline()
+    pipeline_bad_key_type.add_node(
+        scalar_value,
+        params={"return_keys": [123]},
+    )
+    with pytest.raises(TypeError, match="must be str or tuple"):
+        pipeline_bad_key_type.run()
+
+    # Invalid tuple path component is rejected
+    pipeline_bad_tuple_component = Pipeline()
+    pipeline_bad_tuple_component.add_node(
+        scalar_value,
+        params={"return_keys": [("nested", 123)]},
+    )
+    with pytest.raises(TypeError, match="path component must be str"):
+        pipeline_bad_tuple_component.run()
+
+    # Providing both return_key and return_keys is ambiguous
+    pipeline_ambiguous_keys = Pipeline()
+    pipeline_ambiguous_keys.add_node(
+        scalar_value,
+        params={"return_key": "a", "return_keys": ["b"]},
+    )
+    with pytest.raises(ValueError, match="both 'return_key' and 'return_keys'"):
+        pipeline_ambiguous_keys.run()
+
+
 # Test reading YAML config with numpy array parameters and values
 def test_read_yaml_numpy_array():
     
