@@ -403,9 +403,10 @@ def pipeline_node(input_keys=None):
     be interpreted as datablock lookup keys. The corresponding objects will be
     extracted from the datablock and passed to the function. Unregistered
     keyword arguments will be passed directly to the function. The decorated
-    function takes a "return_key" kwarg to specify the key under which the
-    function output will be stored in the datablock. If not provided, the
-    function name will be used as the return key.
+    function takes "return_key" or "return_keys" kwargs to specify the keys
+    under which the function outputs will be stored in the datablock.
+    If not provided, the function name will be used as the prefix for the
+    return keys.
 
     Parameters
     ----------
