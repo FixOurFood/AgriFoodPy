@@ -16,18 +16,26 @@ class LandDataArray:
 
     @staticmethod
     def _validate(obj):
-        """Validate land xarray, checking it is a DataSet and has the minimum
+        """Validate land xarray, checking it is a DataArray and has the minimum
         set of coordinates
         """
         if not isinstance(obj, xr.DataArray):
-            raise TypeError("Land array must be an xarray.Dataarray")
+            raise TypeError("Land array must be an xarray.DataArray")
 
         if "x" not in obj.dims or "y" not in obj.dims:
             raise AttributeError("Land array must have 'x' and 'y' dimensions")
         
 
-    def plot(self, ax=None, category_dim=None, colors=None, labels=None,
-             **kwargs):
+    def plot(
+            self,
+            ax=None,
+            category_dim=None,
+            colors=None,
+            labels=None,
+            legend=False,
+            force_categorical=False,
+            **kwargs
+            ):
         """Plot a LandDataArray
 
         Generates a plot of a LandDataArray using matplotlib imshow, without
@@ -50,6 +58,10 @@ class LandDataArray:
             Dictionary of labels to use for each land class. If not provided
             and the map is a class percentage map, the coordinate values are
             used as labels.
+        legend : bool
+            If True, and data is determined to be categorical, a legend is
+            added to the plot. If data is not categorical, a colorbar is
+            added instead.
         **kwargs : dict
             Style options to be passed to the imshow function.
 
@@ -74,41 +86,67 @@ class LandDataArray:
         # Check the map type by checking for additional coordinates
         extra_coords = [dim for dim in map.dims if dim not in ["x", "y"]]
         if len(extra_coords) >= 1:
-            if labels is None:
-                labels = map[extra_coords[0]].values
             map = self.dominant_category(category_dim=category_dim)
+
+        unique_vals = np.unique(map.values[~np.isnan(map.values)])
+
+        is_discrete = True if len(unique_vals) < 20 else False
+        if force_categorical:
+            is_discrete = True
+
+        if is_discrete:
+            if colors is None:
+                colors = [f"C{i}" for i in np.arange(len(unique_vals))]
+
+            # Create a discrete colour map
+            cmap = mcolors.ListedColormap(colors)
+            bounds = np.linspace(-0.5, len(colors), len(colors) + 1)
+            norm = mcolors.BoundaryNorm(bounds, cmap.N)
+
+            # Get plot ranges
+            dx_low = (map.x.values[1] - map.x.values[0])/2
+            dx_high = (map.x.values[-1] - map.x.values[-2])/2
+            dy_low = (map.y.values[1] - map.y.values[0])/2
+            dy_high = (map.y.values[-1] - map.y.values[-2])/2
+
+            xmin, xmax = map.x.values[[0, -1]]
+            ymin, ymax = map.y.values[[0, -1]]
+
+
+            patches = [mpatches.Patch(color=colors[i],
+                                    label=unique_vals[i])
+                    for i in np.arange(len(unique_vals))]
+
         else:
-            labels = np.unique(map.values)
+            cmap = kwargs.pop("cmap", "viridis")
+            norm = kwargs.pop("norm", None)
 
-        if colors is None:
-            colors = [f"C{i}" for i in np.arange(len(labels))]
+            # Get plot ranges
+            dx_low = (map.x.values[1] - map.x.values[0])/2
+            dx_high = (map.x.values[-1] - map.x.values[-2])/2
+            dy_low = (map.y.values[1] - map.y.values[0])/2
+            dy_high = (map.y.values[-1] - map.y.values[-2])/2
 
-        # Create a colour map
-        cmap = mcolors.ListedColormap(colors)
-        bounds = np.linspace(-0.5, len(colors), len(colors) + 1)
-        norm = mcolors.BoundaryNorm(bounds, cmap.N)
-
-        # Get plot ranges
-        dx_low = (map.x.values[1] - map.x.values[0])/2
-        dx_high = (map.x.values[-1] - map.x.values[-2])/2
-        dy_low = (map.y.values[1] - map.y.values[0])/2
-        dy_high = (map.y.values[-1] - map.y.values[-2])/2
-
-        xmin, xmax = map.x.values[[0, -1]]
-        ymin, ymax = map.y.values[[0, -1]]
+            xmin, xmax = map.x.values[[0, -1]]
+            ymin, ymax = map.y.values[[0, -1]]
 
         ax.imshow(map, interpolation="none", origin="lower",
-                  extent=[xmin-dx_low,
-                          xmax+dx_high,
-                          ymin-dy_low,
-                          ymax+dy_high],
-                  cmap=cmap, norm=norm)
+                extent=[xmin-dx_low,
+                        xmax+dx_high,
+                        ymin-dy_low,
+                        ymax+dy_high],
+                cmap=cmap, norm=norm)
 
-        patches = [mpatches.Patch(color=colors[i],
-                                  label=labels[i])
-                   for i in np.arange(len(labels))]
-
-        ax.legend(handles=patches, loc="best")
+        if legend:
+            if is_discrete:
+                ax.legend(handles=patches, loc="best")
+            else:
+                plt.colorbar(ax.imshow(map, interpolation="none", origin="lower",
+                                       extent=[xmin-dx_low,
+                                               xmax+dx_high,
+                                               ymin-dy_low,
+                                               ymax+dy_high],
+                                       cmap=cmap, norm=norm), ax=ax)
 
         return ax
     
@@ -134,7 +172,7 @@ class LandDataArray:
 
         Parameters
         ----------
-        cateogries : int, array
+        categories : int, array
             List of categories to return the total area for. If not set,
             the function returns areas for all categories found on the map,
             excluding nan values.
@@ -189,7 +227,7 @@ class LandDataArray:
         ----------
         map_right : xarray.DataArray
             LandDataArray style DataArray to compare overlapping areas with
-        categories_left
+        categories_left : int, array
             List of land categories from the left map to return the total area
             overlaps for.
             If not set, all categories are used, except nan values.
