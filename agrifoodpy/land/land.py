@@ -54,10 +54,10 @@ class LandDataArray:
         colors : list of strings
             Dictionary of colors to use for each land class. If not provided,
             the default matplotlib colour map is used.
-        labels : list of strings
-            Dictionary of labels to use for each land class. If not provided
-            and the map is a class percentage map, the coordinate values are
-            used as labels.
+        labels : list of strings, dict
+            List or dictionary of labels to use for each land class. If not
+            provided and the map is a class percentage map, the coordinate
+            values are used as labels.
         legend : bool
             If True, and data is determined to be categorical, a legend is
             added to the plot. If data is not categorical, a colorbar is
@@ -98,6 +98,10 @@ class LandDataArray:
             if colors is None:
                 colors = [f"C{i}" for i in np.arange(len(unique_vals))]
 
+            if labels is None:
+                # labels = [str(val) for val in unique_vals]
+                labels = {val: str(val) for val in unique_vals}
+
             # Create a discrete colour map
             cmap = mcolors.ListedColormap(colors)
             bounds = np.linspace(-0.5, len(colors), len(colors) + 1)
@@ -112,10 +116,9 @@ class LandDataArray:
             xmin, xmax = map.x.values[[0, -1]]
             ymin, ymax = map.y.values[[0, -1]]
 
-
             patches = [mpatches.Patch(color=colors[i],
-                                    label=unique_vals[i])
-                    for i in np.arange(len(unique_vals))]
+                                    label=labels[val])
+                    for i, val in enumerate(unique_vals)]
 
         else:
             cmap = kwargs.pop("cmap", "viridis")
