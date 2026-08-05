@@ -1,0 +1,6 @@
+nodes:
+  - function: agrifoodpy.utils.nodes.write_to_datablock
+    name: Scale Logistic
+    params:
+      key: "test_scale_logistic"
+      value: !scale.logistic [2020, 2022, 2024, 2026, 1.0, 3.0]

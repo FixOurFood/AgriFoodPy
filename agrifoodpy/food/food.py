@@ -152,10 +152,8 @@ class FoodBalanceSheet(XarrayAccessorBase):
             Input DataSet with FAOSTAT like elements
         scale : float, float array_like or xarray.Dataarray
             Scaling quantities for the element DataArray
-        element_in : str
-            Element DataArray to be scaled
-        element_out : str
-            Destination element DataArray to which the difference is added to
+        element : str
+            Food Balance Sheet element to be scaled
         items : list of int or list of str, optional
             List of items to be scaled. If not provided, all items are scaled.
 
@@ -642,7 +640,7 @@ class FoodElementSheet(XarrayAccessorBase):
         if size_cumsum == 1:
             ax.fill_between(years, cumsum, color=colors[0], alpha=0.5)
             ax.plot(years, cumsum, color=colors[0], linewidth=0.5,
-                    label=labels)
+                    label=labels[0])
         else:
             ax.fill_between(years, cumsum.isel({show: 0}), color=colors[0],
                             alpha=0.5)

@@ -1,0 +1,6 @@
+nodes:
+  - function: agrifoodpy.utils.nodes.write_to_datablock
+    name: Scale Linear
+    params:
+      key: "test_scale_linear"
+      value: !scale.linear {y0: 2020, y1: 2022, y2: 2024, y3: 2026, c_init: 1.0, c_end: 3.0}

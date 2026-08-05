@@ -2,44 +2,80 @@ import numpy as np
 import xarray as xr
 from ..array_accessor import XarrayAccessorBase
 
-def test_add_years():
+# Tests for add_years
+def test_add_years_single():
+    # Test adding single year
 
     years = np.arange(2010, 2013)
     data = np.random.rand(3, 2, 2)
-    new_years = [2013, 2014, 2015]
-    expected_years = np.concatenate([years, new_years])
+    new_year = 2014
 
     ds = xr.Dataset({"data": (("Year", "X", "Y"), data)},
                       coords={"Year": years, "X": [0, 1], "Y": [0, 1]})
     
     fbs = XarrayAccessorBase(ds)
 
-    # Test adding single year
-
-    result_single = fbs.add_years(new_years[0])
-    expected_years_single = np.concatenate([years, [new_years[0]]])
+    result_single = fbs.add_years(new_year)
+    expected_years_single = np.concatenate([years, [new_year]])
 
     assert np.array_equal(result_single["Year"], expected_years_single)
-    assert np.isnan(result_single["data"].loc[{"Year":new_years[0]}].to_numpy()
-                    ).all()
+    assert np.isnan(
+        result_single["data"].loc[{"Year":new_year}].to_numpy()).all()
 
-    # Test adding years with "empty" projection
-    result_empty = fbs.add_years(new_years, projection="empty")
+
+def test_add_years_multiple():
+    # Test adding multiple years
+
+    years = np.arange(2010, 2013)
+    data = np.random.rand(3, 2, 2)
+
+    ds = xr.Dataset({"data": (("Year", "X", "Y"), data)},
+                      coords={"Year": years, "X": [0, 1], "Y": [0, 1]})
+    fbs = XarrayAccessorBase(ds)
+
+    new_years = [2013, 2014, 2015]
+    expected_years = np.unique(np.concatenate([years, new_years]))
+
+    result_empty = fbs.add_years(new_years)
 
     assert np.array_equal(result_empty["Year"], expected_years)
     assert np.isnan(result_empty["data"].loc[{"Year":new_years}].to_numpy()
                     ).all()
 
+
+def test_add_years_constant_projection():
     # Test adding years with "constant" projection
+
+    years = np.arange(2010, 2013)
+    data = np.random.rand(3, 2, 2)
+
+    ds = xr.Dataset({"data": (("Year", "X", "Y"), data)},
+                      coords={"Year": years, "X": [0, 1], "Y": [0, 1]})
+    fbs = XarrayAccessorBase(ds)
+    
+    new_years = [2013, 2014, 2015]
+    expected_years = np.unique(np.concatenate([years, new_years]))
+
     result_constant = fbs.add_years(new_years, projection="constant")
     last_year_data = ds["data"].isel(Year=-1).values
 
     assert np.array_equal(result_constant["Year"], expected_years)
     for year in new_years:
-        assert np.array_equal(result_constant["data"].loc[{"Year":year}].values,
-                              last_year_data)
+        assert np.array_equal(
+            result_constant["data"].loc[{"Year":year}].values, last_year_data)
 
+def test_add_years_with_projection_array():
     # Test adding years with specific projection
+
+    years = np.arange(2010, 2013)
+    data = np.random.rand(3, 2, 2)
+    new_years = [2013, 2014, 2015]
+    expected_years = np.unique(np.concatenate([years, new_years]))
+
+    ds = xr.Dataset({"data": (("Year", "X", "Y"), data)},
+                      coords={"Year": years, "X": [0, 1], "Y": [0, 1]})
+    fbs = XarrayAccessorBase(ds)
+
     proj = [0.5, 0.6, 0.7]  # Scaling factors
     result_projection = fbs.add_years(new_years, projection=proj)
     last_year_data = result_projection["data"].loc[dict(Year=years[-1])].values
@@ -49,12 +85,37 @@ def test_add_years():
     assert np.allclose(result_projection["data"].loc[{"Year":new_years}].values,
                        expected_data)
 
+def test_add_years_duplicates():
     # Test for duplicate years
+    years = np.arange(2010, 2013)
+    data = np.random.rand(3, 2, 2)
+    new_years = [2013, 2014, 2015]
+    expected_years = np.unique(np.concatenate([years, new_years]))
+
+    ds = xr.Dataset({"data": (("Year", "X", "Y"), data)},
+                      coords={"Year": years, "X": [0, 1], "Y": [0, 1]})
+    fbs = XarrayAccessorBase(ds)
+
     new_years_duplicate = [2013, 2013, 2014, 2015]
     result_duplicate = fbs.add_years(new_years_duplicate)
 
     assert np.array_equal(result_duplicate["Year"], expected_years)
 
+def test_add_years_no_year_dim():
+    # Test for adding years to an array without "Year" dimension
+
+    ds_no_year = xr.Dataset({"data": (("X", "Y"), np.random.rand(2, 2))},
+                            coords={"X": [0, 1], "Y": [0, 1]})
+    
+    fbs_no_year = XarrayAccessorBase(ds_no_year)
+
+    new_years = [2013, 2014, 2015]
+    result_no_year = fbs_no_year.add_years(new_years)
+
+    assert np.array_equal(result_no_year["Year"], new_years)
+
+
+# Tests for add_items
 def test_add_items():
 
     items = ["Beef", "Apples", "Poultry"]
