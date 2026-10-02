@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 HERE = pathlib.Path(__file__).parent
 
-VERSION = '0.2.1'
+VERSION = '0.2.2'
 PACKAGE_NAME = 'AgriFoodPy'
 AUTHOR = 'FixOurFood developers'
 AUTHOR_EMAIL = 'juanpablo.cordero@york.ac.uk'

@@ -154,6 +154,68 @@ def test_datablock_write():
     assert(pipeline.datablock['a']['e'] == 30)
     assert(pipeline.datablock['f'] == 40)
 
+
+def test_pipeline_set_node_parameter_and_skip_basic():
+    from agrifoodpy.pipeline import Pipeline
+
+    def dummy_node(datablock=None, **kwargs):
+        return datablock
+
+    p = Pipeline()
+    p.add_node(dummy_node, params={"param1": 1}, name="first_node")
+
+    # set by index
+    p.set_node_parameter(0, "param1", 42)
+    assert p.params[0]["param1"] == 42
+
+    # set by name (creates new param key)
+    p.set_node_parameter("first_node", "new_param", "value")
+    assert p.params[0]["new_param"] == "value"
+
+    # set skip by index
+    p.set_node_skip(0, True)
+    assert p.skip[0] is True
+
+    # set skip by name
+    p.set_node_skip("first_node", False)
+    assert p.skip[0] is False
+
+
+def test_pipeline_set_node_parameter_and_skip_errors():
+    from agrifoodpy.pipeline import Pipeline
+
+    def dummy_node(datablock=None):
+        return datablock
+
+    p = Pipeline()
+    p.add_node(dummy_node, name="n1")
+
+    # Index out of range
+    with pytest.raises(IndexError):
+        p.set_node_parameter(5, "x", 1)
+    with pytest.raises(IndexError):
+        p.set_node_skip(5, True)
+
+    # Name not found
+    with pytest.raises(ValueError):
+        p.set_node_parameter("no_such", "x", 1)
+    with pytest.raises(ValueError):
+        p.set_node_skip("no_such", True)
+
+    # Duplicate names -> should raise ValueError
+    p.add_node(dummy_node, name="n1")
+    with pytest.raises(ValueError):
+        p.set_node_parameter("n1", "x", 1)
+    with pytest.raises(ValueError):
+        p.set_node_skip("n1", True)
+
+    # Invalid node type
+    with pytest.raises(TypeError):
+        p.set_node_parameter(1.23, "x", 1)
+    with pytest.raises(TypeError):
+        p.set_node_skip([], True)
+
+
 def test_standalone_decorator():
 
     from agrifoodpy.pipeline.pipeline import Pipeline, standalone

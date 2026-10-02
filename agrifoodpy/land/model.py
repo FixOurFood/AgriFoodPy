@@ -110,7 +110,7 @@ def scale_land(
     target_distribution=None,
     category_dim=None,
 ):
-    """Convert land from one category to another.
+    """Scale and convert land from one category to another.
 
     Given a Land Data Array map with pixel values for the different land use
     types, the model computes the new land use map after conversion of a
@@ -157,7 +157,6 @@ def scale_land(
 
     if isinstance(origin, str):
         origin = [origin]
-
 
     # Use the first non spatial dimension if category dimension not provided
     if category_dim is None:

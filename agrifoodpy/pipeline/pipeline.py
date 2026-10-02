@@ -32,6 +32,7 @@ class Pipeline():
         self.nodes = []
         self.params = []
         self.names = []
+        self.skip = []
         if datablock is not None:
             self.datablock = datablock
         else:
@@ -157,10 +158,12 @@ class Pipeline():
                 func = cls._load_function(step["function"])
                 params = step.get("params", {})
                 name = step.get("name", func.__name__)
+                skip = step.get("skip", False)
 
                 pipeline.nodes.append(func)
                 pipeline.params.append(params)
                 pipeline.names.append(name)
+                pipeline.skip.append(skip)
 
         return pipeline
 
@@ -180,7 +183,14 @@ class Pipeline():
             current = current.setdefault(key, {})
         current[path[-1]] = value
 
-    def add_node(self, node, params=None, name=None, index=None):
+    def add_node(
+            self,
+            node,
+            params=None,
+            name=None,
+            index=None,
+            skip=False
+    ):
         """Adds a node to the pipeline, including its function and execution
         parameters.
 
@@ -210,6 +220,7 @@ class Pipeline():
         self.names.insert(index, name)
         self.nodes.insert(index, node)
         self.params.insert(index, params)
+        self.skip.insert(index, skip)
 
     def remove_node(self, node):
         """Remove a node from the pipeline by index or name.
@@ -243,6 +254,7 @@ class Pipeline():
         del self.nodes[index]
         del self.params[index]
         del self.names[index]
+        del self.skip[index]
 
     def run(self, from_node=0, to_node=None, skip=None, timing=False):
         """Runs the pipeline
@@ -256,8 +268,8 @@ class Pipeline():
             The index of the last node to be executed. If not provided, all
             nodes will be executed
 
-        skip : list of int, optional
-            List of node indices to skip during execution. Defaults to None.
+        skip : list of int, list of str, optional
+            List of node indices or names to skip during execution.
 
         timing : bool, optional
             If True, the execution time of each node will be printed. Defaults
@@ -272,9 +284,9 @@ class Pipeline():
         # Execute the node functions within the specified range
         for i in range(from_node, to_node):
 
-            if skip is not None and i in skip:
+            if (skip is not None and (i in skip or self.names[i] in skip)) or self.skip[i]:
                 if timing:
-                    print(f"Node {i + 1}: {self.names[i]}, skipped.")
+                    print(f"Node {i:<3}: {self.names[i][:30]:<32} skipped.")
                 continue
 
             node = self.nodes[i]
@@ -289,9 +301,9 @@ class Pipeline():
             node_time = node_end_time - node_start_time
 
             if timing:
-                print(f"Node {i + 1}: {self.names[i]}, \
-                      executed in {node_time:.4f} seconds.")
 
+                print(f"Node {i:<3}: {self.names[i][:30]:<32} " \
+                      f"executed in {node_time:.4f} seconds.")
         pipeline_end_time = time.time()
         pipeline_time = pipeline_end_time - pipeline_start_time
 
@@ -318,6 +330,76 @@ class Pipeline():
             if show_params and params:
                 for k, v in params.items():
                     print(f"    {k} = {v}")
+
+
+    def set_node_parameter(self, node, parameter, value):
+        """Set a parameter for a node in the pipeline by index or name.
+
+        Parameters
+        ----------
+        node : int or str
+            Index of the node, or its name.
+        parameter : str
+            Name of the parameter to set.
+        value : any
+            Value to set for the parameter.
+        """
+        # Resolve index
+        if isinstance(node, int):
+            index = node
+            if index < 0 or index >= len(self.nodes):
+                raise IndexError(f"Node index {index} out of range.")
+
+        elif isinstance(node, str):
+            matches = [i for i, name in enumerate(self.names) if name == node]
+            if not matches:
+                raise ValueError(f"No node found with name '{node}'.")
+            if len(matches) > 1:
+                raise ValueError(
+                    f"Multiple nodes found with name '{node}'. "
+                    "Please set parameters by index instead."
+                )
+            index = matches[0]
+
+        else:
+            raise TypeError("node must be an int (index) or str (name).")
+
+        # Set the parameter
+        self.params[index][parameter] = value
+
+
+    def set_node_skip(self, node, skip):
+        """Set the skip flag for a node in the pipeline by index or name.
+
+        Parameters
+        ----------
+        node : int or str
+            Index of the node, or its name.
+        skip : bool
+            True to skip the node during execution, False to execute it.
+        """
+        # Resolve index
+        if isinstance(node, int):
+            index = node
+            if index < 0 or index >= len(self.nodes):
+                raise IndexError(f"Node index {index} out of range.")
+
+        elif isinstance(node, str):
+            matches = [i for i, name in enumerate(self.names) if name == node]
+            if not matches:
+                raise ValueError(f"No node found with name '{node}'.")
+            if len(matches) > 1:
+                raise ValueError(
+                    f"Multiple nodes found with name '{node}'. "
+                    "Please set the skip flag by index instead."
+                )
+            index = matches[0]
+
+        else:
+            raise TypeError("node must be an int (index) or str (name).")
+
+        # Set the skip flag
+        self.skip[index] = skip
 
 
 def standalone(input_keys, return_keys):
@@ -374,21 +456,21 @@ def standalone(input_keys, return_keys):
                 # Create list of keys for passed arguments only
                 for key in input_keys:
                     if kwargs.get(key, None) is not None:
-                        kwargs[key] = key
+                        set_dict(kwargs, key, key)
 
                 # Fill return keys if they are not passed or are None
                 for key in return_keys:
                     if kwargs.get(key, None) is None:
-                        kwargs[key] = key
+                        set_dict(kwargs, key, key)
 
             result = test_func(**kwargs)
 
             # return tuple of results
             if standalone:
                 if len(return_keys) == 1:
-                    return result[kwargs[return_keys[0]]]
+                    return get_dict(result, kwargs[return_keys[0]])
                 else:
-                    return tuple(result[key] for key in return_keys)
+                    return tuple(get_dict(result, kwargs[key]) for key in return_keys)
 
             return result
         return wrapper

@@ -119,12 +119,12 @@ def copy_datablock(datablock, key, out_key):
 
     Parameters
     ----------
-    datablock : xarray.Dataset
-        The datablock to print
-    key : str
-        The key of the datablock to print
-    out_key : str
-        The key of the datablock to copy to
+    datablock : dict
+        The datablock to copy from.
+    key : str, tuple
+        The key of the datablock to copy from.
+    out_key : str, tuple
+        The key of the datablock to copy to.
 
     Returns
     -------
@@ -132,7 +132,7 @@ def copy_datablock(datablock, key, out_key):
         Datablock to with added key
     """
 
-    datablock[out_key] = copy.deepcopy(datablock[key])
+    set_dict(datablock, out_key, copy.deepcopy(get_dict(datablock, key)))
 
     return datablock
 
@@ -170,7 +170,8 @@ def print_datablock(
     datablock : dict
         Unmodified datablock to continue execution.
     """
-    obj = datablock[key]
+
+    obj = get_dict(datablock, key)
 
     # Extract attribute
     if attr is not None:
@@ -269,7 +270,7 @@ def load_dataset(
         Dictionary containing the coordinates of the dataset to be loaded.
     scale : float
         Optional multiplicative factor to be applied to the dataset on load.
-    datablock_path : str
+    datablock_path : str, tuple
         The path to the datablock where the dataset is stored.
 
     """
@@ -296,7 +297,7 @@ def load_dataset(
         dataset = dataset.sel(coords)
 
     # Add dataset to datablock
-    datablock[datablock_path] = dataset * scale
+    set_dict(datablock, datablock_path, dataset * scale)
 
     return datablock
 
