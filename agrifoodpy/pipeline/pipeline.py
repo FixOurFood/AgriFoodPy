@@ -456,21 +456,21 @@ def standalone(input_keys, return_keys):
                 # Create list of keys for passed arguments only
                 for key in input_keys:
                     if kwargs.get(key, None) is not None:
-                        kwargs[key] = key
+                        set_dict(kwargs, key, key)
 
                 # Fill return keys if they are not passed or are None
                 for key in return_keys:
                     if kwargs.get(key, None) is None:
-                        kwargs[key] = key
+                        set_dict(kwargs, key, key)
 
             result = test_func(**kwargs)
 
             # return tuple of results
             if standalone:
                 if len(return_keys) == 1:
-                    return result[kwargs[return_keys[0]]]
+                    return get_dict(result, kwargs[return_keys[0]])
                 else:
-                    return tuple(result[key] for key in return_keys)
+                    return tuple(get_dict(result, kwargs[key]) for key in return_keys)
 
             return result
         return wrapper
